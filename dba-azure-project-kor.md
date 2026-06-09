@@ -492,9 +492,10 @@ dba-azure-project/
 - [x] Resource Group (`rg-dba-project`, `eastus`)
 - [x] Azure DNS Zone + Cloudflare NS 위임 완료
 - [x] Azure Static Web Apps + `www.dba-azure.techcloudup.com` 라이브
-- [ ] Azure Key Vault → `DB-CONNECTION-STRING` 등록
-- [ ] `main.bicep` 배포 (SQL + Function App)
-- [ ] SQL 방화벽 + 연결 테스트
+- [x] Azure Key Vault (`kv-dba-xvel6ncdvw`, `eastus`) — `DB-CONNECTION-STRING` 등록 완료
+- [x] `main.bicep` 배포 — SQL Server (`sql-dba-xvel6ncdvwsre`, `westus3`) + `HospitalDB` + Log Analytics + App Insights
+- [x] SQL 방화벽 (로컬 IP `108.94.142.34`) + `pyodbc` 연결 테스트 통과
+- [ ] Function App (`func.bicep`) — VM 쿼타 또는 리전 가용성 확인 후 배포 예정
 - [ ] Function App Managed Identity → Key Vault 권한
 
 ### Phase 3 — DB 스키마

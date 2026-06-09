@@ -659,10 +659,11 @@ dba-azure-project/
 - [x] Resource Group (`rg-dba-project`, `eastus`)
 - [x] Azure DNS Zone (`dba-azure.techcloudup.com`) — Cloudflare NS delegation complete
 - [x] Azure Static Web Apps (`swa-dba-project`) — `www.dba-azure.techcloudup.com` live
-- [ ] Azure Key Vault — register `DB-CONNECTION-STRING`
-- [ ] Deploy `main.bicep` — SQL Server + Database + Function App
-- [ ] Azure SQL Server firewall rule — allow local IP
-- [ ] Test Azure SQL connection (Azure Data Studio or `sqlcmd`)
+- [x] Azure Key Vault (`kv-dba-xvel6ncdvw`, `eastus`) — `DB-CONNECTION-STRING` registered
+- [x] Deploy `main.bicep` — SQL Server (`sql-dba-xvel6ncdvwsre`, `westus3`) + `HospitalDB` + Log Analytics + App Insights
+- [x] Azure SQL Server firewall rule — local IP `108.94.142.34` allowed
+- [x] Test Azure SQL connection — `pyodbc` connected, `HospitalDB` verified
+- [ ] Function App (`func.bicep`) — pending VM quota or region availability
 - [ ] Function App Managed Identity → Key Vault access
 
 ---

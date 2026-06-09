@@ -1128,10 +1128,11 @@ resource sqlDB &#39;Microsoft.Sql/servers/databases@2021-11-01&#39; = {
 <li><input checked="" disabled="" type="checkbox"> Resource Group (<code>rg-dba-project</code>, <code>eastus</code>)</li>
 <li><input checked="" disabled="" type="checkbox"> Azure DNS Zone (<code>dba-azure.techcloudup.com</code>) — Cloudflare NS delegation complete</li>
 <li><input checked="" disabled="" type="checkbox"> Azure Static Web Apps (<code>swa-dba-project</code>) — <code>www.dba-azure.techcloudup.com</code> live</li>
-<li><input disabled="" type="checkbox"> Azure Key Vault — register <code>DB-CONNECTION-STRING</code></li>
-<li><input disabled="" type="checkbox"> Deploy <code>main.bicep</code> — SQL Server + Database + Function App</li>
-<li><input disabled="" type="checkbox"> Azure SQL Server firewall rule — allow local IP</li>
-<li><input disabled="" type="checkbox"> Test Azure SQL connection (Azure Data Studio or <code>sqlcmd</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> Azure Key Vault (<code>kv-dba-xvel6ncdvw</code>, <code>eastus</code>) — <code>DB-CONNECTION-STRING</code> registered</li>
+<li><input checked="" disabled="" type="checkbox"> Deploy <code>main.bicep</code> — SQL Server (<code>sql-dba-xvel6ncdvwsre</code>, <code>westus3</code>) + <code>HospitalDB</code> + Log Analytics + App Insights</li>
+<li><input checked="" disabled="" type="checkbox"> Azure SQL Server firewall rule — local IP <code>108.94.142.34</code> allowed</li>
+<li><input checked="" disabled="" type="checkbox"> Test Azure SQL connection — <code>pyodbc</code> connected, <code>HospitalDB</code> verified</li>
+<li><input disabled="" type="checkbox"> Function App (<code>func.bicep</code>) — pending VM quota or region availability</li>
 <li><input disabled="" type="checkbox"> Function App Managed Identity → Key Vault access</li>
 </ul>
 <hr>
