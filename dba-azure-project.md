@@ -61,6 +61,25 @@ A portfolio project demonstrating end-to-end data engineering and DBA competenci
 5. Point-in-Time Restore completes with data integrity verified; recovery time recorded
 6. All code published on GitHub with execution instructions in README
 
+### HIPAA Considerations
+
+> The CMS datasets used in this project are **publicly available, fully de-identified** under the Safe Harbor method (45 CFR §164.514(b)) and do not contain Protected Health Information (PHI). HIPAA obligations therefore do not apply to this project.
+>
+> However, the architecture is designed with HIPAA-readiness in mind. If this system were extended to handle PHI, the following controls would be required and are already structurally supported:
+
+| Control | Azure Service / Mechanism | Notes |
+|---------|--------------------------|-------|
+| Encryption at rest | Azure SQL TDE (enabled by default) | AES-256; no extra config needed on GP tier |
+| Encryption in transit | TLS 1.2 enforced on SQL Server | Set `minimalTlsVersion: '1.2'` in Bicep |
+| Access control | Azure RBAC + Managed Identity | No passwords in code; `DefaultAzureCredential` pattern already applied |
+| Audit logging | Azure SQL Auditing → Storage Account / Log Analytics | Enable `auditingSettings` in Bicep for PHI workloads |
+| Secret management | Azure Key Vault | Connection strings never in code or config files |
+| Network isolation | Private Endpoint + VNet Integration | Recommended addition for PHI; not provisioned in this demo |
+| Breach notification | Azure Security Center / Defender for SQL | Threat detection policy enables anomaly alerts |
+| Business Associate Agreement | Microsoft BAA | Available under Microsoft's standard OST for Azure |
+
+This design pattern demonstrates awareness of HIPAA technical safeguards (§164.312) and can be extended to a compliant architecture with minimal structural changes.
+
 ---
 
 ## 2. Architecture

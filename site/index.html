@@ -172,6 +172,61 @@
 <li>Point-in-Time Restore completes with data integrity verified; recovery time recorded</li>
 <li>All code published on GitHub with execution instructions in README</li>
 </ol>
+<h3 id="hipaa-considerations">HIPAA Considerations</h3>
+<blockquote>
+<p>The CMS datasets used in this project are <strong>publicly available, fully de-identified</strong> under the Safe Harbor method (45 CFR §164.514(b)) and do not contain Protected Health Information (PHI). HIPAA obligations therefore do not apply to this project.</p>
+<p>However, the architecture is designed with HIPAA-readiness in mind. If this system were extended to handle PHI, the following controls would be required and are already structurally supported:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Azure Service / Mechanism</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Encryption at rest</td>
+<td>Azure SQL TDE (enabled by default)</td>
+<td>AES-256; no extra config needed on GP tier</td>
+</tr>
+<tr>
+<td>Encryption in transit</td>
+<td>TLS 1.2 enforced on SQL Server</td>
+<td>Set <code>minimalTlsVersion: &#39;1.2&#39;</code> in Bicep</td>
+</tr>
+<tr>
+<td>Access control</td>
+<td>Azure RBAC + Managed Identity</td>
+<td>No passwords in code; <code>DefaultAzureCredential</code> pattern already applied</td>
+</tr>
+<tr>
+<td>Audit logging</td>
+<td>Azure SQL Auditing → Storage Account / Log Analytics</td>
+<td>Enable <code>auditingSettings</code> in Bicep for PHI workloads</td>
+</tr>
+<tr>
+<td>Secret management</td>
+<td>Azure Key Vault</td>
+<td>Connection strings never in code or config files</td>
+</tr>
+<tr>
+<td>Network isolation</td>
+<td>Private Endpoint + VNet Integration</td>
+<td>Recommended addition for PHI; not provisioned in this demo</td>
+</tr>
+<tr>
+<td>Breach notification</td>
+<td>Azure Security Center / Defender for SQL</td>
+<td>Threat detection policy enables anomaly alerts</td>
+</tr>
+<tr>
+<td>Business Associate Agreement</td>
+<td>Microsoft BAA</td>
+<td>Available under Microsoft&#39;s standard OST for Azure</td>
+</tr>
+</tbody></table>
+<p>This design pattern demonstrates awareness of HIPAA technical safeguards (§164.312) and can be extended to a compliant architecture with minimal structural changes.</p>
 <hr>
 <h2 id="2-architecture">2. Architecture</h2>
 <pre><code>┌─────────────────────────────────────────────────────────────┐
