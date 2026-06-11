@@ -405,11 +405,11 @@ resource sqlDB 'Microsoft.Sql/servers/databases@2021-11-01' = {
 | Azure DNS Zone | `dba-azure.techcloudup.com` | 글로벌 | ✅ 활성 |
 | Azure Static Web Apps | `swa-dba-project` | East US 2 | ✅ 활성 |
 | 커스텀 도메인 | `www.dba-azure.techcloudup.com` | — | ✅ Ready (SSL) |
-| Azure Key Vault | — | — | ⬜ 미생성 |
-| Azure SQL Server | — | — | ⬜ 미생성 |
-| Azure SQL Database | `HospitalDB` | — | ⬜ 미생성 |
-| Azure Function App (ETL + API) | — | — | ⬜ 미생성 |
-| Application Insights | — | — | ⬜ 미생성 |
+| Azure Key Vault | `kv-dba-xvel6ncdvw` | East US | ✅ 활성 |
+| Azure SQL Server | `sql-dba-xvel6ncdvwsre` | West US 3 | ✅ 활성 |
+| Azure SQL Database | `HospitalDB` | West US 3 | ✅ 활성 (Serverless GP_S_Gen5_1) |
+| Azure Function App (ETL + API) | — | — | ⬜ 대기 중 (VM 쿼타) |
+| Application Insights | `appi-dba-project` | East US | ✅ 활성 |
 | Power BI 워크스페이스 | — | — | ⬜ 미생성 |
 
 **라이브 URL:** https://www.dba-azure.techcloudup.com
@@ -500,16 +500,17 @@ dba-azure-project/
 
 ### Phase 3 — DB 스키마
 
-- [ ] `sql/01_schema.sql` 실행 (Hospital, HospitalVisitMetrics, ETL_Log)
-- [ ] `sql/02_indexes.sql` 실행
-- [ ] 스키마 확인 + 샘플 데이터 검증
+- [x] `sql/01_schema.sql` 실행 (Hospital, HospitalVisitMetrics, ETL_Log)
+- [x] `sql/02_indexes.sql` 실행 (Non-clustered 인덱스 6개)
+- [x] 스키마 확인 + 샘플 데이터 검증
 
 ### Phase 4 — ETL 코드 개발
 
-- [ ] `etl/local_test.py` — CMS API 응답 파싱 로컬 검증
-- [ ] `etl.py` — fetch / transform / load / log_run 함수
-- [ ] Timer Trigger + `function.json` CRON 설정
-- [ ] 로컬 테스트 후 Azure 배포
+- [x] `etl/cms_client.py` — CMS API 페이지네이션 수집 (Hospital 5,433건 / Metrics 67,088건)
+- [x] `etl/db_client.py` — MERGE upsert (Hospital, HospitalVisitMetrics) + ETL_Log 기록
+- [x] `etl/etl_runner.py` — 로컬 실행 및 전체 데이터 로드 완료
+- [ ] Timer Trigger `__init__.py` + `function.json` CRON 설정 — Function App 배포 후 진행
+- [ ] 로컬 `func start` 테스트 후 Azure 배포
 
 ### Phase 5 — REST API 개발
 

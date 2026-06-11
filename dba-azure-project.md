@@ -568,11 +568,11 @@ resource sqlDB 'Microsoft.Sql/servers/databases@2021-11-01' = {
 | Azure DNS Zone | `dba-azure.techcloudup.com` | Global | ✅ Active |
 | Azure Static Web Apps | `swa-dba-project` | East US 2 | ✅ Active |
 | Custom Domain | `www.dba-azure.techcloudup.com` | — | ✅ Ready (SSL) |
-| Azure Key Vault | — | — | ⬜ Pending |
-| Azure SQL Server | — | — | ⬜ Pending |
-| Azure SQL Database | `HospitalDB` | — | ⬜ Pending |
-| Azure Function App (ETL + API) | — | — | ⬜ Pending |
-| Application Insights | — | — | ⬜ Pending |
+| Azure Key Vault | `kv-dba-xvel6ncdvw` | East US | ✅ Active |
+| Azure SQL Server | `sql-dba-xvel6ncdvwsre` | West US 3 | ✅ Active |
+| Azure SQL Database | `HospitalDB` | West US 3 | ✅ Active (Serverless GP_S_Gen5_1) |
+| Azure Function App (ETL + API) | — | — | ⬜ Pending (VM quota) |
+| Application Insights | `appi-dba-project` | East US | ✅ Active |
 | Power BI Workspace | — | — | ⬜ Pending |
 
 **Live URL:** https://www.dba-azure.techcloudup.com
@@ -670,24 +670,24 @@ dba-azure-project/
 
 ### Phase 3 — Database Schema Setup
 
-- [ ] Run `sql/01_schema.sql` — create `Hospital`, `HospitalVisitMetrics`, `ETL_Log`
-- [ ] Run `sql/02_indexes.sql` — apply all indexes
-- [ ] Verify schema: `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo'`
-- [ ] Manual sample INSERT + SELECT verification
+- [x] Run `sql/01_schema.sql` — create `Hospital`, `HospitalVisitMetrics`, `ETL_Log`
+- [x] Run `sql/02_indexes.sql` — apply all indexes
+- [x] Verify schema: `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo'`
+- [x] Manual sample INSERT + SELECT verification
 
 ---
 
 ### Phase 4 — ETL Code Development
 
-- [ ] `etl/local_test.py` — validate CMS API call and field mapping locally
-- [ ] `etl/function_app/etl.py`
-  - [ ] `fetch_hospitals()` — paginated GET
-  - [ ] `fetch_visit_metrics()` — paginated GET
-  - [ ] `transform_hospital()` / `transform_metrics()` — type conversion, normalization
-  - [ ] `load_hospitals()` — MERGE upsert
-  - [ ] `load_metrics()` — bulk INSERT
-  - [ ] `log_run()` — ETL_Log write
-- [ ] Timer Trigger `__init__.py` + `function.json` (`0 0 0,12 * * *`)
+- [x] `etl/cms_client.py` — validate CMS API call and field mapping locally
+- [x] `etl/db_client.py` + `etl/etl_runner.py`
+  - [x] `fetch_hospitals()` — paginated GET (5,433 records)
+  - [x] `fetch_visit_metrics()` — paginated GET (67,088 records)
+  - [x] transform + type conversion, normalization (built into upsert)
+  - [x] `upsert_hospitals()` — MERGE upsert on FacilityID
+  - [x] `upsert_metrics()` — MERGE upsert on FacilityID + MeasureID + PeriodEnd
+  - [x] `log_start()` / `log_end()` — ETL_Log write
+- [ ] Timer Trigger `__init__.py` + `function.json` (`0 0 0,12 * * *`) — pending Function App
 - [ ] `requirements.txt`
 - [ ] Local `func start` test
 - [ ] Deploy to Azure + manual trigger test via portal
