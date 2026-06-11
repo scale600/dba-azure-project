@@ -12,9 +12,25 @@ Secrets: DB_CONNECTION_STRING from environment (.env locally, Key Vault in prod)
 import os
 import sys
 import time
+import logging
 
 # Allow running from repo root
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# App Insights telemetry (optional — skipped if key not set)
+try:
+    from applicationinsights import TelemetryClient
+    _ai_key = os.getenv("APPINSIGHTS_INSTRUMENTATIONKEY", "")
+    _tc: TelemetryClient | None = TelemetryClient(_ai_key) if _ai_key else None
+except ImportError:
+    _tc = None
+
+log = logging.getLogger(__name__)
+
+def _track_event(name: str, props: dict):
+    if _tc:
+        _tc.track_event(name, props)
+        _tc.flush()
 
 from etl.cms_client import fetch_hospitals, fetch_visit_metrics
 from etl.db_client import (
@@ -92,11 +108,20 @@ def run_etl():
 
         log_end(conn, log_id, hospitals_loaded, metrics_loaded, "SUCCESS")
         print(f"\nETL complete — hospitals:{hospitals_loaded}  metrics:{metrics_loaded}")
+        _track_event("ETL_Success", {
+            "log_id": str(log_id),
+            "hospitals_loaded": str(hospitals_loaded),
+            "metrics_loaded": str(metrics_loaded),
+        })
 
     except Exception as exc:
         conn.rollback()
         log_end(conn, log_id, hospitals_loaded, metrics_loaded, "FAILED", str(exc)[:4000])
         print(f"\nETL FAILED: {exc}", file=sys.stderr)
+        _track_event("ETL_Failed", {
+            "log_id": str(log_id),
+            "error": str(exc)[:500],
+        })
         raise
     finally:
         conn.close()

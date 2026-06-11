@@ -1,0 +1,132 @@
+{
+  "lenses": {
+    "0": {
+      "order": 0,
+      "parts": {
+        "0": {
+          "position": { "x": 0, "y": 0, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+            "inputs": [
+              {
+                "name": "options",
+                "value": {
+                  "chart": {
+                    "metrics": [
+                      {
+                        "resourceMetadata": { "id": "/subscriptions/b417437f-ae82-4df2-8e62-a4f1af05c281/resourceGroups/rg-dba-project/providers/Microsoft.Sql/servers/sql-dba-xvel6ncdvwsre/databases/HospitalDB" },
+                        "name": "cpu_percent",
+                        "aggregationType": 4,
+                        "namespace": "Microsoft.Sql/servers/databases",
+                        "metricVisualization": { "displayName": "CPU Percentage" }
+                      }
+                    ],
+                    "title": "HospitalDB — CPU %",
+                    "visualization": { "chartType": 2 },
+                    "timespan": { "relative": { "duration": 86400000 } }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "1": {
+          "position": { "x": 6, "y": 0, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+            "inputs": [
+              {
+                "name": "options",
+                "value": {
+                  "chart": {
+                    "metrics": [
+                      {
+                        "resourceMetadata": { "id": "/subscriptions/b417437f-ae82-4df2-8e62-a4f1af05c281/resourceGroups/rg-dba-project/providers/Microsoft.Sql/servers/sql-dba-xvel6ncdvwsre/databases/HospitalDB" },
+                        "name": "storage",
+                        "aggregationType": 3,
+                        "namespace": "Microsoft.Sql/servers/databases",
+                        "metricVisualization": { "displayName": "Data space used (bytes)" }
+                      }
+                    ],
+                    "title": "HospitalDB — Storage Used",
+                    "visualization": { "chartType": 2 },
+                    "timespan": { "relative": { "duration": 86400000 } }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "2": {
+          "position": { "x": 0, "y": 4, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+            "inputs": [
+              {
+                "name": "options",
+                "value": {
+                  "chart": {
+                    "metrics": [
+                      {
+                        "resourceMetadata": { "id": "/subscriptions/b417437f-ae82-4df2-8e62-a4f1af05c281/resourceGroups/rg-dba-project/providers/Microsoft.Sql/servers/sql-dba-xvel6ncdvwsre/databases/HospitalDB" },
+                        "name": "connection_successful",
+                        "aggregationType": 1,
+                        "namespace": "Microsoft.Sql/servers/databases",
+                        "metricVisualization": { "displayName": "Successful Connections" }
+                      },
+                      {
+                        "resourceMetadata": { "id": "/subscriptions/b417437f-ae82-4df2-8e62-a4f1af05c281/resourceGroups/rg-dba-project/providers/Microsoft.Sql/servers/sql-dba-xvel6ncdvwsre/databases/HospitalDB" },
+                        "name": "connection_failed",
+                        "aggregationType": 1,
+                        "namespace": "Microsoft.Sql/servers/databases",
+                        "metricVisualization": { "displayName": "Failed Connections" }
+                      }
+                    ],
+                    "title": "HospitalDB — Connections",
+                    "visualization": { "chartType": 2 },
+                    "timespan": { "relative": { "duration": 86400000 } }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "3": {
+          "position": { "x": 6, "y": 4, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+            "inputs": [
+              {
+                "name": "options",
+                "value": {
+                  "chart": {
+                    "metrics": [
+                      {
+                        "resourceMetadata": { "id": "/subscriptions/b417437f-ae82-4df2-8e62-a4f1af05c281/resourceGroups/rg-dba-project/providers/Microsoft.Sql/servers/sql-dba-xvel6ncdvwsre/databases/HospitalDB" },
+                        "name": "deadlock",
+                        "aggregationType": 1,
+                        "namespace": "Microsoft.Sql/servers/databases",
+                        "metricVisualization": { "displayName": "Deadlocks" }
+                      }
+                    ],
+                    "title": "HospitalDB — Deadlocks",
+                    "visualization": { "chartType": 2 },
+                    "timespan": { "relative": { "duration": 86400000 } }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "model": {
+      "timeRange": {
+        "value": { "relative": { "duration": 24, "timeUnit": 1 } },
+        "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+      }
+    }
+  }
+}

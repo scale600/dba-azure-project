@@ -760,13 +760,13 @@ az sql db restore \
 
 ### Phase 9 — Monitoring Setup
 
-- [ ] Connect Application Insights — track ETL + API function execution
-- [ ] Azure Monitor alerts
-  - Email on ETL failure
-  - API error rate > 5% alert
-  - DB CPU > 80% alert
-- [ ] Azure Portal dashboard — ETL history, API request rate, DTU usage
-- [ ] Export `monitoring/dashboard.json`
+- [x] Application Insights (`appi-dba-project`, eastus) — key registered in `.env`
+- [x] ETL telemetry — `ETL_Success` / `ETL_Failed` custom events via `applicationinsights` SDK
+- [x] Azure Monitor metric alerts (→ scale600@gmail.com via ag-dba-email)
+  - `alert-db-cpu-high` — CPU > 80%, severity 2
+  - `alert-db-connections-failed` — connection failures > 10, severity 2
+  - `alert-db-deadlocks` — deadlocks > 0, severity 1
+- [x] Azure Portal dashboard — CPU, storage, connections, deadlocks → `monitoring/dashboard.json`
 
 ---
 

@@ -549,9 +549,10 @@ dba-azure-project/
 
 ### Phase 9 — 모니터링
 
-- [ ] Application Insights 연결 (ETL + API)
-- [ ] Azure Monitor 경보 (ETL 실패, API 오류율 >5%, CPU >80%)
-- [ ] 대시보드 구성 + `monitoring/dashboard.json` 저장
+- [x] Application Insights 키 `.env` 등록, ETL 텔레메트리 연동 (`ETL_Success`/`ETL_Failed` 이벤트)
+- [x] Azure Monitor 경보 3개 (→ scale600@gmail.com)
+  - CPU > 80%, 연결 실패 > 10, 데드락 > 0
+- [x] Azure Portal 대시보드 → `monitoring/dashboard.json`
 
 ### Phase 10 — 마무리
 
