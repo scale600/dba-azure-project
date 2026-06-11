@@ -1,0 +1,124 @@
+// =============================================================
+// DAX Measures — DBA Azure Project : HospitalDB
+// Power BI Desktop: paste each measure into the Modeling tab
+// Tables: vw_HospitalNationalOverview, vw_StateSummary,
+//         vw_MetricsQuality, vw_ETLOperations
+// =============================================================
+
+// -------------------------------------------------------------
+// Page 1 — National Overview
+// -------------------------------------------------------------
+
+Total Hospitals =
+COUNTROWS(vw_HospitalNationalOverview)
+
+Avg Rating =
+AVERAGEX(
+    FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] <> BLANK()),
+    vw_HospitalNationalOverview[OverallRating]
+)
+
+Emergency Coverage % =
+DIVIDE(
+    COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[EmergencyServices] = "Y")),
+    COUNTROWS(vw_HospitalNationalOverview)
+) * 100
+
+Top Rated Hospitals =
+COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 5))
+
+Unrated Hospitals =
+COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = BLANK()))
+
+Rating 1 Count = COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 1))
+Rating 2 Count = COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 2))
+Rating 3 Count = COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 3))
+Rating 4 Count = COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 4))
+Rating 5 Count = COUNTROWS(FILTER(vw_HospitalNationalOverview, vw_HospitalNationalOverview[OverallRating] = 5))
+
+// -------------------------------------------------------------
+// Page 2 — State Drill-Down
+// -------------------------------------------------------------
+
+Selected State Hospitals =
+CALCULATE(
+    COUNTROWS(vw_HospitalNationalOverview),
+    ALLEXCEPT(vw_HospitalNationalOverview, vw_HospitalNationalOverview[State])
+)
+
+State Avg Rating =
+CALCULATE(
+    [Avg Rating],
+    ALLEXCEPT(vw_HospitalNationalOverview, vw_HospitalNationalOverview[State])
+)
+
+State Emergency % =
+CALCULATE(
+    [Emergency Coverage %],
+    ALLEXCEPT(vw_HospitalNationalOverview, vw_HospitalNationalOverview[State])
+)
+
+// -------------------------------------------------------------
+// Page 3 — Quality Metrics
+// -------------------------------------------------------------
+
+Total Metric Records =
+COUNTROWS(vw_MetricsQuality)
+
+Avg Score =
+AVERAGE(vw_MetricsQuality[Score])
+
+Better Than National =
+COUNTROWS(FILTER(vw_MetricsQuality, vw_MetricsQuality[ComparedToNational] = "Better"))
+
+Same As National =
+COUNTROWS(FILTER(vw_MetricsQuality, vw_MetricsQuality[ComparedToNational] = "Same"))
+
+Worse Than National =
+COUNTROWS(FILTER(vw_MetricsQuality, vw_MetricsQuality[ComparedToNational] = "Worse"))
+
+Better % =
+DIVIDE(
+    [Better Than National],
+    [Better Than National] + [Same As National] + [Worse Than National]
+) * 100
+
+Min Score = MIN(vw_MetricsQuality[Score])
+Max Score = MAX(vw_MetricsQuality[Score])
+
+Unique Measures =
+DISTINCTCOUNT(vw_MetricsQuality[MeasureID])
+
+// -------------------------------------------------------------
+// Page 4 — ETL Operations
+// -------------------------------------------------------------
+
+Total ETL Runs =
+COUNTROWS(vw_ETLOperations)
+
+ETL Success Rate % =
+DIVIDE(
+    COUNTROWS(FILTER(vw_ETLOperations, vw_ETLOperations[Status] = "SUCCESS")),
+    COUNTROWS(vw_ETLOperations)
+) * 100
+
+Avg ETL Duration (sec) =
+AVERAGEX(
+    FILTER(vw_ETLOperations, vw_ETLOperations[Status] = "SUCCESS"),
+    vw_ETLOperations[DurationSec]
+)
+
+Total Hospitals Loaded =
+SUM(vw_ETLOperations[HospitalsLoaded])
+
+Total Metrics Loaded =
+SUM(vw_ETLOperations[MetricsLoaded])
+
+Last ETL Run =
+MAX(vw_ETLOperations[RunStart])
+
+Last ETL Status =
+CALCULATE(
+    SELECTEDVALUE(vw_ETLOperations[Status]),
+    TOPN(1, vw_ETLOperations, vw_ETLOperations[RunStart], DESC)
+)

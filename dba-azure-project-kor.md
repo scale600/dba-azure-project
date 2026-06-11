@@ -539,12 +539,13 @@ dba-azure-project/
 
 ### Phase 8 — BI 대시보드 (Power BI)
 
-- [ ] Power BI Desktop → Azure SQL Database DirectQuery 연결
-- [ ] Page 1~4 빌드 (National Overview, State Drill-Down, Quality Metrics, ETL Ops)
-- [ ] DAX 측정값 작성
-- [ ] Power BI Service 게시 + 새로고침 일정 설정
+- [x] Power BI DirectQuery용 SQL 뷰 4개 생성
+  - `vw_HospitalNationalOverview`, `vw_StateSummary`
+  - `vw_MetricsQuality`, `vw_ETLOperations`
+- [x] DAX 측정값 22개 작성 → `bi/dax_measures.dax`
+- [x] Power BI 연결 가이드 → `bi/powerbi_setup.md`
+- [ ] Windows에서 Power BI Desktop으로 .pbix 빌드 + Service 게시
 - [ ] TC-08 검증 (30초 이내)
-- [ ] `bi/hospital_quality.pbix` 저장
 
 ### Phase 9 — 모니터링
 

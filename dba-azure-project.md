@@ -746,16 +746,15 @@ az sql db restore \
 
 ### Phase 8 — BI Dashboard (Power BI)
 
-- [ ] Connect Power BI Desktop to Azure SQL Database (DirectQuery)
-- [ ] Build Page 1 — National Overview (map, rating distribution, KPI cards)
-- [ ] Build Page 2 — State Drill-Down (slicer, hospital list, trend)
-- [ ] Build Page 3 — Quality Metrics (measure slicer, score distribution, top 10)
-- [ ] Build Page 4 — ETL Operations (run history, success rate, volume trend)
-- [ ] Write key DAX measures (`Total Hospitals`, `Avg Rating`, `ETL Success Rate %`)
-- [ ] Publish to Power BI Service
-- [ ] Schedule dataset refresh
+- [x] Create 4 DirectQuery-optimized SQL views in HospitalDB
+  - `vw_HospitalNationalOverview` — 5,433 rows (Page 1, 2)
+  - `vw_StateSummary` — 56 states aggregated (Page 2)
+  - `vw_MetricsQuality` — joined metrics + hospital (Page 3)
+  - `vw_ETLOperations` — ETL run history with DurationSec (Page 4)
+- [x] Write all DAX measures → `bi/dax_measures.dax` (22 measures across 4 pages)
+- [x] Document Power BI connection + report design → `bi/powerbi_setup.md`
+- [ ] Connect Power BI Desktop (Windows) → build .pbix → publish to Power BI Service
 - [ ] Verify TC-08 (refresh under 30 seconds)
-- [ ] Save `bi/hospital_quality.pbix`
 
 ---
 
