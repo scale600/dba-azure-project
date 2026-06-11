@@ -77,6 +77,16 @@ BEGIN
 END
 GO
 
+-- Measure + Score lookup (REST API /api/metrics/top) — DMV-recommended 2026-06-11
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_VisitMetrics_MeasureID_Score' AND object_id = OBJECT_ID('dbo.HospitalVisitMetrics'))
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_VisitMetrics_MeasureID_Score
+        ON dbo.HospitalVisitMetrics (MeasureID, Score)
+        INCLUDE (FacilityID, ComparedToNational, PeriodEnd);
+    PRINT 'Created: IX_VisitMetrics_MeasureID_Score';
+END
+GO
+
 -- -------------------------------------------------------------
 -- Verify
 -- -------------------------------------------------------------

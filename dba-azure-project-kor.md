@@ -514,17 +514,20 @@ dba-azure-project/
 
 ### Phase 5 — REST API 개발
 
-- [ ] `shared/db.py` — Key Vault 기반 연결 풀
-- [ ] 5개 엔드포인트 구현 (hospitals, detail, metrics, states, top)
-- [ ] 에러 핸들링 미들웨어 (표준 JSON 에러 형식)
-- [ ] 로컬 테스트 후 Azure 배포
+- [x] `api/db.py` — 연결 헬퍼 (env var + Key Vault 자동 전환)
+- [x] 5개 엔드포인트 구현 (hospitals, detail, metrics, states/summary, metrics/top)
+- [x] 에러 핸들링 — 표준 JSON 에러 형식 (`{"error", "message", "status"}`)
+- [ ] Azure Function App 배포 (VM quota 해결 후)
 - [ ] TC-06, TC-07 검증
 
 ### Phase 6 — 성능 튜닝
 
-- [ ] 인덱스 전후 실행 계획 + logical reads 비교
-- [ ] DMV 상위 쿼리 분석
-- [ ] `sql/03_queries.sql`에 결과 기록
+- [x] 인덱스 전후 실행 계획 비교 (4개 쿼리, 5회 평균)
+  - 병원메트릭 조회: 35.6 ms → 16.5 ms (-54%)
+  - National비교 필터: 36.9 ms → 15.7 ms (-57%)
+  - 이름 검색: 18.4 ms → 15.9 ms (-14%)
+- [x] DMV missing index 분석 → IX_VisitMetrics_MeasureID_Score 추가 (impact 63.9)
+- [x] `sql/03_queries.sql` 작성 (벤치마크 + DMV + ETL 품질 쿼리)
 
 ### Phase 7 — 백업 및 복구 검증
 

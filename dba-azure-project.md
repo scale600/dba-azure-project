@@ -696,34 +696,27 @@ dba-azure-project/
 
 ### Phase 5 — REST API Development
 
-- [ ] `api/function_app/shared/db.py` — connection pool helper (Key Vault secret)
-- [ ] `GET /api/hospitals` — filter, pagination, JSON response
-- [ ] `GET /api/hospitals/{id}` — single hospital detail
-- [ ] `GET /api/hospitals/{id}/metrics` — metrics history with optional measure filter
-- [ ] `GET /api/states/summary` — aggregate per state
-- [ ] `GET /api/metrics/top` — ranked hospitals by score
-- [ ] Error handling middleware — standard `{"error", "message", "status"}` format
-- [ ] Local test with `func start`
-- [ ] Deploy to Azure Function App
+- [x] `api/db.py` — connection helper (env var + Key Vault fallback)
+- [x] `GET /api/hospitals` — filter, pagination, JSON response
+- [x] `GET /api/hospitals/{id}` — single hospital detail
+- [x] `GET /api/hospitals/{id}/metrics` — metrics history with optional measure filter
+- [x] `GET /api/states/summary` — aggregate per state
+- [x] `GET /api/metrics/top` — ranked hospitals by score
+- [x] Error handling — standard `{"error", "message", "status"}` format
+- [ ] Deploy to Azure Function App (pending VM quota)
 - [ ] Verify all endpoints via TC-06 / TC-07
 
 ---
 
 ### Phase 6 — Performance Tuning (Core DBA)
 
-- [ ] Capture baseline execution plan (no indexes)
-  ```sql
-  SET STATISTICS IO, TIME ON;
-  SELECT h.State, m.MeasureID, AVG(m.Score) AS AvgScore
-  FROM dbo.HospitalVisitMetrics m
-  JOIN dbo.Hospital h ON h.FacilityID = m.FacilityID
-  WHERE m.CollectedAt >= DATEADD(DAY, -30, GETDATE())
-  GROUP BY h.State, m.MeasureID;
-  ```
-- [ ] Apply indexes → re-run same query
-- [ ] Record `logical reads` and `elapsed time` before/after
-- [ ] DMV top-cost query review
-- [ ] Document results in `sql/03_queries.sql`
+- [x] Capture baseline (PK Scan) vs index execution — 4개 쿼리 비교
+- [x] Record elapsed time before/after (min of 5 runs each)
+  - 병원메트릭 조회: 35.6 ms → 16.5 ms (-54%)
+  - National비교 필터: 36.9 ms → 15.7 ms (-57%)
+  - 이름 검색: 18.4 ms → 15.9 ms (-14%)
+- [x] DMV missing index 분석 → IX_VisitMetrics_MeasureID_Score 추가 적용 (impact 63.9)
+- [x] Document results in `sql/03_queries.sql`
 
 ---
 
