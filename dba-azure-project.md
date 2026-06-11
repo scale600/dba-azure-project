@@ -722,10 +722,25 @@ dba-azure-project/
 
 ### Phase 7 — Backup & Recovery Validation
 
-- [ ] Confirm Azure SQL auto-backup (default 7-day retention)
-- [ ] Point-in-Time Restore test + data integrity check
-- [ ] Record actual recovery time (Serverless tier)
-- [ ] Document restore procedure in `README.md`
+- [x] Confirm Azure SQL auto-backup — 7-day retention, diff every 12h, Local redundancy
+- [x] Point-in-Time Restore test — restored to 5 min before canary insert
+  - Hospital: 5,434 → 5,433 ✅ (canary row absent in restored DB)
+  - Metrics: 67,088 → 67,088 ✅ (fully intact)
+- [x] Recovery time: **16분** (GP_S_Gen5_1 Serverless, westus3, ~5,433 hospitals + 67,088 metrics)
+- [x] Restore procedure documented below
+
+**Restore Command:**
+```bash
+az sql db restore \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --dest-name HospitalDB-Restored \
+  --time "2026-06-11T22:10:51Z" \
+  --edition GeneralPurpose \
+  --service-objective GP_S_Gen5_1 \
+  --family Gen5
+```
 
 ---
 

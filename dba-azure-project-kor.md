@@ -531,7 +531,11 @@ dba-azure-project/
 
 ### Phase 7 — 백업 및 복구 검증
 
-- [ ] Point-in-Time Restore 테스트 + 복구 시간 실측
+- [x] Azure SQL 자동 백업 확인 — 보존 7일, 차등 12시간 간격, Local 중복성
+- [x] Point-in-Time Restore 테스트 (canary row 기반 무결성 검증)
+  - Hospital: 5,434 → 5,433 ✅ (복구 시점 이후 삽입된 행 없음)
+  - Metrics: 67,088 → 67,088 ✅
+- [x] 복구 소요 시간: **16분** (GP_S_Gen5_1 Serverless, westus3)
 
 ### Phase 8 — BI 대시보드 (Power BI)
 
