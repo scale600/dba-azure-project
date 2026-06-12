@@ -312,7 +312,7 @@ const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
 function downloadCSV(filename, headers, rows) {{
-  const escape = v => {{ const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${{s.replace(/"/g,'""')}}"` : s; }};
+  const escape = v => {{ const s = String(v ?? ''); return (s.includes(',') || s.includes('"')) ? '"' + s.replace(/"/g,'""') + '"' : s; }};
   const lines = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([lines.join('\n')], {{type:'text/csv'}}));
