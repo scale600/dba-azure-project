@@ -202,6 +202,7 @@ tr:last-child td{{border-bottom:none}}
       <span class="badge snap" id="data-badge">SNAPSHOT</span>
       <span class="generated" id="gen-time"></span>
       <button class="btn-export" id="btn-all-hospitals" onclick="exportAllHospitals()">↓ All Hospitals</button>
+      <button class="btn-export" id="btn-quality-metrics" onclick="exportQualityMetrics()">↓ Quality Metrics</button>
     </div>
   </div>
 
@@ -349,13 +350,42 @@ async function exportAllHospitals() {{
       if (d.data.length === 0) break;
     }}
     downloadCSV('hospitals_all.csv',
-      ['FacilityID','FacilityName','City','State','ZipCode','HospitalType','EmergencyServices','OverallRating'],
+      ['FacilityID','FacilityName','Address','City','State','ZipCode','Phone',
+       'HospitalType','EmergencyServices','OverallRating','Latitude','Longitude'],
       all);
     btn.textContent = `✓ ${{all.length}} rows`;
     setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 3000);
   }} catch (_) {{
     btn.textContent = '✗ Failed';
     setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 2000);
+  }}
+}}
+
+async function exportQualityMetrics() {{
+  const btn = document.getElementById('btn-quality-metrics');
+  btn.disabled = true; btn.textContent = '⏳ Fetching…';
+  try {{
+    let all = [], offset = 0, total = Infinity;
+    while (all.length < total) {{
+      const res = await fetch(`${{API}}/metrics/export?limit=2000&offset=${{offset}}`, {{signal: AbortSignal.timeout(60000)}});
+      if (!res.ok) throw new Error('API error');
+      const d = await res.json();
+      total = d.total;
+      all = all.concat(d.data);
+      offset += d.data.length;
+      btn.textContent = `⏳ ${{all.length.toLocaleString()}}/${{total.toLocaleString()}}`;
+      if (d.data.length === 0) break;
+    }}
+    downloadCSV('quality_metrics.csv',
+      ['FacilityID','FacilityName','State','City','HospitalType','EmergencyServices',
+       'OverallRating','MeasureID','MeasureName','Score','ComparedToNational',
+       'NumberOfPatients','PeriodStart','PeriodEnd'],
+      all);
+    btn.textContent = `✓ ${{all.length.toLocaleString()}} rows`;
+    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }}, 3000);
+  }} catch (_) {{
+    btn.textContent = '✗ Failed';
+    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }}, 2000);
   }}
 }}
 

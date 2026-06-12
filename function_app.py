@@ -66,7 +66,7 @@ def get_hospitals(req: func.HttpRequest) -> func.HttpResponse:
     state     = req.params.get("state", "").upper().strip() or None
     emergency = req.params.get("emergency", "").upper().strip() or None
     rating    = req.params.get("rating")
-    limit     = _int(req.params.get("limit"), 20, 1, 100)
+    limit     = _int(req.params.get("limit"), 20, 1, 500)
     offset    = _int(req.params.get("offset"), 0, 0, 1_000_000)
 
     where_clauses = []
@@ -89,9 +89,10 @@ def get_hospitals(req: func.HttpRequest) -> func.HttpResponse:
 
     count_sql = f"SELECT COUNT(*) AS total FROM dbo.Hospital {where}"
     data_sql = f"""
-        SELECT FacilityID, FacilityName, City, RTRIM(State) AS State,
+        SELECT FacilityID, FacilityName, Address, City, RTRIM(State) AS State,
+               ZipCode, Phone, HospitalType,
                RTRIM(EmergencyServices) AS EmergencyServices, OverallRating,
-               HospitalType
+               Latitude, Longitude
         FROM dbo.Hospital
         {where}
         ORDER BY FacilityName
@@ -258,3 +259,50 @@ def get_metrics_top(req: func.HttpRequest) -> func.HttpResponse:
         "count": len(rows),
         "data": rows,
     })
+
+
+# ---------------------------------------------------------------------------
+# GET /api/metrics/export  — bulk hospital+metrics for CSV download
+# ---------------------------------------------------------------------------
+
+@app.route(route="metrics/export", methods=["GET"])
+def get_metrics_export(req: func.HttpRequest) -> func.HttpResponse:
+    state  = req.params.get("state", "").upper().strip() or None
+    limit  = _int(req.params.get("limit"), 1000, 1, 2000)
+    offset = _int(req.params.get("offset"), 0, 0, 10_000_000)
+
+    where_parts = []
+    params: list = []
+    if state:
+        where_parts.append("RTRIM(h.State) = ?")
+        params.append(state[:2])
+
+    where = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+
+    count_sql = f"""
+        SELECT COUNT(*) AS total
+        FROM dbo.HospitalVisitMetrics m
+        JOIN dbo.Hospital h ON h.FacilityID = m.FacilityID
+        {where}
+    """
+    data_sql = f"""
+        SELECT
+            h.FacilityID, h.FacilityName, RTRIM(h.State) AS State, h.City,
+            h.HospitalType, RTRIM(h.EmergencyServices) AS EmergencyServices,
+            h.OverallRating,
+            m.MeasureID, m.MeasureName, m.Score, m.ComparedToNational,
+            m.NumberOfPatients, m.PeriodStart, m.PeriodEnd
+        FROM dbo.HospitalVisitMetrics m
+        JOIN dbo.Hospital h ON h.FacilityID = m.FacilityID
+        {where}
+        ORDER BY h.FacilityName, m.MeasureID
+        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+    """
+    try:
+        total = query(count_sql, tuple(params))[0]["total"]
+        rows  = query(data_sql, tuple(params) + (offset, limit))
+    except Exception as exc:
+        log.exception("get_metrics_export failed")
+        return _err("INTERNAL_ERROR", str(exc), 500)
+
+    return _ok({"total": total, "limit": limit, "offset": offset, "data": rows})
