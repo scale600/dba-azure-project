@@ -72,6 +72,19 @@ tr:last-child td{border-bottom:none}
 .btn-export:hover{background:rgba(59,130,246,.15);color:#60a5fa;border-color:#3b82f6}
 .btn-export:disabled{opacity:.4;cursor:not-allowed}
 
+/* Data Export section */
+.export-grid{display:flex;flex-direction:column;gap:12px}
+.export-item{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);transition:background .15s}
+.export-item:hover{background:rgba(255,255,255,.04)}
+.export-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.export-info{flex:1;min-width:0}
+.export-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.export-desc{font-size:12px;color:var(--muted);margin-bottom:4px}
+.export-cols{font-size:10px;color:#475569;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-export-lg{flex-shrink:0;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(59,130,246,.1);color:#60a5fa;transition:all .15s;white-space:nowrap}
+.btn-export-lg:hover{background:rgba(59,130,246,.25);border-color:#3b82f6}
+.btn-export-lg:disabled{opacity:.4;cursor:not-allowed}
+
 @media(max-width:680px){
   aside{display:none}
   .content{padding:16px}
@@ -105,6 +118,10 @@ tr:last-child td{border-bottom:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
       ETL Operations
     </a>
+    <a href="#export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Data Export
+    </a>
   </nav>
   <div class="sidebar-footer">
     Azure SQL · westus3<br/>
@@ -118,8 +135,6 @@ tr:last-child td{border-bottom:none}
     <div style="display:flex;align-items:center;gap:12px">
       <span class="badge snap" id="data-badge">SNAPSHOT</span>
       <span class="generated" id="gen-time"></span>
-      <button class="btn-export" id="btn-all-hospitals" onclick="exportAllHospitals()">↓ All Hospitals</button>
-      <button class="btn-export" id="btn-quality-metrics" onclick="exportQualityMetrics()">↓ Quality Metrics</button>
     </div>
   </div>
 
@@ -205,7 +220,6 @@ tr:last-child td{border-bottom:none}
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>ETL Run History</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn-export" onclick="exportETL()">↓ CSV</button>
           <span class="badge live">LIVE</span>
         </div>
       </div>
@@ -220,12 +234,68 @@ tr:last-child td{border-bottom:none}
       </table>
     </div>
 
+    <!-- Data Export -->
+    <div class="card" id="export">
+      <div class="card-title">Data Export</div>
+      <div class="export-grid">
+
+        <div class="export-item">
+          <div class="export-icon" style="background:rgba(59,130,246,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+          </div>
+          <div class="export-info">
+            <div class="export-name">All Hospitals</div>
+            <div class="export-desc">5,433 hospitals · 12 columns including address, phone, GPS coordinates</div>
+            <div class="export-cols">FacilityID · FacilityName · Address · City · State · ZipCode · Phone · HospitalType · EmergencyServices · OverallRating · Latitude · Longitude</div>
+          </div>
+          <button class="btn-export-lg" id="btn-all-hospitals" onclick="exportAllHospitals()">↓ CSV</button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon" style="background:rgba(168,85,247,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+          </div>
+          <div class="export-info">
+            <div class="export-name">Quality Metrics</div>
+            <div class="export-desc">67,088 records · hospital-level clinical quality measures</div>
+            <div class="export-cols">FacilityID · FacilityName · State · HospitalType · MeasureID · MeasureName · Score · ComparedToNational · NumberOfPatients · PeriodStart · PeriodEnd</div>
+          </div>
+          <button class="btn-export-lg" id="btn-quality-metrics" onclick="exportQualityMetrics()">↓ CSV</button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon" style="background:rgba(34,197,94,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><circle cx="12" cy="11" r="3"/></svg>
+          </div>
+          <div class="export-info">
+            <div class="export-name">State Summary</div>
+            <div class="export-desc">51 states/territories · aggregate hospital stats per state</div>
+            <div class="export-cols">State · TotalHospitals · AvgRating · WithEmergency · TopRatedCount</div>
+          </div>
+          <button class="btn-export-lg" onclick="exportStates()">↓ CSV</button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon" style="background:rgba(234,179,8,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          </div>
+          <div class="export-info">
+            <div class="export-name">ETL Run Log</div>
+            <div class="export-desc">Last 8 ETL runs · pipeline execution history</div>
+            <div class="export-cols">LogID · RunStart · Status · HospitalsLoaded · MetricsLoaded · DurationSec</div>
+          </div>
+          <button class="btn-export-lg" onclick="exportETL()">↓ CSV</button>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </main>
 
 <script>
 const DB_DATA = {
-  "generated_at": "2026-06-12 08:45 PST",
+  "generated_at": "2026-06-12 08:52 PST",
   "kpi": {
     "total_hospitals": 5433,
     "avg_rating": 3.21,
