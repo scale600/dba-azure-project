@@ -3,7 +3,9 @@
 
 import os, sys, json
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
+
+PST = timezone(timedelta(hours=-8))
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -29,7 +31,7 @@ def q(sql): return [{k: fix(v) for k, v in r.items()} for r in query(sql)]
 print("Querying HospitalDB...")
 
 data = {
-    "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+    "generated_at": datetime.now(PST).strftime("%Y-%m-%d %H:%M PST"),
     "kpi": q("""
         SELECT
             COUNT(*) AS total_hospitals,
@@ -72,7 +74,7 @@ data = {
             HospitalsLoaded AS hospitals_loaded,
             MetricsLoaded   AS metrics_loaded,
             DATEDIFF(SECOND, RunStart, RunEnd) AS duration_sec,
-            CONVERT(VARCHAR(16), RunStart, 120) AS run_start
+            CONVERT(VARCHAR(16), DATEADD(HOUR, -8, RunStart), 120) AS run_start
         FROM dbo.ETL_Log ORDER BY RunStart DESC
     """),
 }
@@ -407,7 +409,8 @@ new Chart(document.getElementById('chartNational'), {{
       DB_DATA.metrics_count
     );
 
-    const now = new Date().toISOString().replace('T',' ').substring(0,16) + ' UTC';
+    const pst = new Date(Date.now() - 8*3600*1000);
+    const now = pst.toISOString().replace('T',' ').substring(0,16) + ' PST';
     document.getElementById('gen-time').textContent = 'Live: ' + now;
     setBadge(true);
 

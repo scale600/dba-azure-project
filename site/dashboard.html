@@ -214,7 +214,7 @@ tr:last-child td{border-bottom:none}
 
 <script>
 const DB_DATA = {
-  "generated_at": "2026-06-12 15:45 UTC",
+  "generated_at": "2026-06-12 07:56 PST",
   "kpi": {
     "total_hospitals": 5433,
     "avg_rating": 3.21,
@@ -410,12 +410,20 @@ const DB_DATA = {
   ],
   "etl_log": [
     {
+      "log_id": 6,
+      "status": "SUCCESS",
+      "hospitals_loaded": 5432,
+      "metrics_loaded": 67088,
+      "duration_sec": 109,
+      "run_start": "2026-06-12 07:53"
+    },
+    {
       "log_id": 5,
       "status": "SUCCESS",
       "hospitals_loaded": 0,
       "metrics_loaded": 67088,
       "duration_sec": 50,
-      "run_start": "2026-06-11 22:47"
+      "run_start": "2026-06-11 14:47"
     },
     {
       "log_id": 4,
@@ -423,7 +431,7 @@ const DB_DATA = {
       "hospitals_loaded": 0,
       "metrics_loaded": 67088,
       "duration_sec": 43,
-      "run_start": "2026-06-11 22:04"
+      "run_start": "2026-06-11 14:04"
     },
     {
       "log_id": 3,
@@ -431,7 +439,7 @@ const DB_DATA = {
       "hospitals_loaded": 0,
       "metrics_loaded": 0,
       "duration_sec": 12,
-      "run_start": "2026-06-11 22:03"
+      "run_start": "2026-06-11 14:03"
     },
     {
       "log_id": 2,
@@ -439,7 +447,7 @@ const DB_DATA = {
       "hospitals_loaded": 5432,
       "metrics_loaded": 0,
       "duration_sec": 132,
-      "run_start": "2026-06-11 21:59"
+      "run_start": "2026-06-11 13:59"
     },
     {
       "log_id": 1,
@@ -447,7 +455,7 @@ const DB_DATA = {
       "hospitals_loaded": 1,
       "metrics_loaded": 0,
       "duration_sec": null,
-      "run_start": "2026-06-11 21:52"
+      "run_start": "2026-06-11 13:52"
     }
   ]
 };
@@ -563,7 +571,8 @@ new Chart(document.getElementById('chartNational'), {
       DB_DATA.metrics_count
     );
 
-    const now = new Date().toISOString().replace('T',' ').substring(0,16) + ' UTC';
+    const pst = new Date(Date.now() - 8*3600*1000);
+    const now = pst.toISOString().replace('T',' ').substring(0,16) + ' PST';
     document.getElementById('gen-time').textContent = 'Live: ' + now;
     setBadge(true);
 
