@@ -663,8 +663,8 @@ dba-azure-project/
 - [x] Deploy `main.bicep` — SQL Server (`sql-dba-xvel6ncdvwsre`, `westus3`) + `HospitalDB` + Log Analytics + App Insights
 - [x] Azure SQL Server firewall rule — local IP `108.94.142.34` allowed
 - [x] Test Azure SQL connection — `pyodbc` connected, `HospitalDB` verified
-- [ ] Function App (`func.bicep`) — pending VM quota or region availability
-- [ ] Function App Managed Identity → Key Vault access
+- [x] Function App (`func.bicep`) — deployed to `centralus` (`func-dba-xvel6ncdvwsre`)
+- [x] Function App Managed Identity → Key Vault access (`Key Vault Secrets Officer`)
 
 ---
 
@@ -687,10 +687,9 @@ dba-azure-project/
   - [x] `upsert_hospitals()` — MERGE upsert on FacilityID
   - [x] `upsert_metrics()` — MERGE upsert on FacilityID + MeasureID + PeriodEnd
   - [x] `log_start()` / `log_end()` — ETL_Log write
-- [ ] Timer Trigger `__init__.py` + `function.json` (`0 0 0,12 * * *`) — pending Function App
-- [ ] `requirements.txt`
-- [ ] Local `func start` test
-- [ ] Deploy to Azure + manual trigger test via portal
+- [x] Timer Trigger (`0 0 0,12 * * *`) — deployed in `function_app.py` (Azure Functions v2)
+- [x] `requirements.txt`
+- [x] Deploy to Azure Function App — live at `func-dba-xvel6ncdvwsre.azurewebsites.net`
 
 ---
 
@@ -703,8 +702,9 @@ dba-azure-project/
 - [x] `GET /api/states/summary` — aggregate per state
 - [x] `GET /api/metrics/top` — ranked hospitals by score
 - [x] Error handling — standard `{"error", "message", "status"}` format
-- [ ] Deploy to Azure Function App (pending VM quota)
-- [ ] Verify all endpoints via TC-06 / TC-07
+- [x] Deploy to Azure Function App — live at `func-dba-xvel6ncdvwsre.azurewebsites.net`
+- [x] TC-06 (`GET /api/hospitals?state=CA` → 379 results) ✅
+- [x] TC-07 (`GET /api/hospitals/999999` → 404 NOT_FOUND) ✅
 
 ---
 
@@ -777,6 +777,6 @@ az sql db restore \
 - [x] Write `README.md` — architecture, local setup, API docs, security notes
 - [x] Switch GitHub repository to Public — https://github.com/scale600/dba-azure-project
 - [ ] Add ASCII architecture diagram
-- [ ] GitHub Actions CI — SQL lint on PR
+- [x] GitHub Actions — daily dashboard rebuild + SWA auto-deploy (`deploy-dashboard.yml`, 01:00 UTC)
 - [ ] Run full test plan TC-01 ~ TC-08
 - [x] Final secret exposure check — git history clean, no credentials ever committed
