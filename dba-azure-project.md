@@ -774,9 +774,9 @@ az sql db restore \
 
 ### Phase 10 — Wrap-up & Portfolio Polish
 
-- [ ] Write `README.md` — architecture diagram, local run instructions, API docs, BI screenshots
+- [x] Write `README.md` — architecture, local setup, API docs, security notes
+- [x] Switch GitHub repository to Public — https://github.com/scale600/dba-azure-project
 - [ ] Add ASCII architecture diagram
 - [ ] GitHub Actions CI — SQL lint on PR
 - [ ] Run full test plan TC-01 ~ TC-08
 - [ ] Final secret exposure check
-- [ ] Switch GitHub repository to Public
