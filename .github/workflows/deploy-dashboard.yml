@@ -1,0 +1,41 @@
+name: Deploy Dashboard
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 매일 01:00 UTC (ETL 완료 후 1시간)
+  workflow_dispatch:        # 수동 실행 버튼
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ODBC Driver 18
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update -q
+          ACCEPT_EULA=Y sudo apt-get install -yq msodbcsql18
+
+      - name: Install Python dependencies
+        run: pip install pyodbc azure-identity azure-keyvault-secrets requests
+
+      - name: Build dashboard snapshot
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+        run: python build_dashboard.py
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOYMENT_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: site
+          skip_app_build: true

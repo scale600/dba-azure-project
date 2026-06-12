@@ -214,7 +214,7 @@ tr:last-child td{border-bottom:none}
 
 <script>
 const DB_DATA = {
-  "generated_at": "2026-06-11 22:48 UTC",
+  "generated_at": "2026-06-12 15:45 UTC",
   "kpi": {
     "total_hospitals": 5433,
     "avg_rating": 3.21,
@@ -454,7 +454,6 @@ const DB_DATA = {
 
 const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 function setBadge(live) {
   const el = document.getElementById('data-badge');
   if (live) {
@@ -543,16 +542,14 @@ new Chart(document.getElementById('chartNational'), {
     ]);
     if (!statesRes.ok || !hospitalsRes.ok) throw new Error('API error');
 
-    const statesData   = await statesRes.json();
+    const statesData    = await statesRes.json();
     const hospitalsData = await hospitalsRes.json();
 
-    // Update states chart with live data (top 20 by hospital count)
     const top20 = statesData.data.slice(0, 20);
     chartStates.data.labels = top20.map(d => d.state);
     chartStates.data.datasets[0].data = top20.map(d => d.total_hospitals);
     chartStates.update();
 
-    // Recompute KPIs from live state summary
     const totalHospitals = hospitalsData.total;
     const withEmergency  = statesData.data.reduce((s, d) => s + (d.with_emergency||0), 0);
     const ratedStates    = statesData.data.filter(d => d.avg_rating > 0);
@@ -566,12 +563,11 @@ new Chart(document.getElementById('chartNational'), {
       DB_DATA.metrics_count
     );
 
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
+    const now = new Date().toISOString().replace('T',' ').substring(0,16) + ' UTC';
     document.getElementById('gen-time').textContent = 'Live: ' + now;
     setBadge(true);
 
   } catch (_) {
-    // API unreachable or timed out — snapshot remains, no visual change needed
     setBadge(false);
   }
 })();
