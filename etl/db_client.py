@@ -121,9 +121,16 @@ def _safe_date(val):
 def _safe_compared(val):
     if not val:
         return None
-    v = str(val).strip()
-    allowed = {"Better", "Same", "Worse", "Not Available"}
-    return v if v in allowed else None
+    v = str(val).strip().lower()
+    if "fewer" in v or "better" in v or "lower" in v:
+        return "Better"
+    if "average" in v or "same" in v or "no different" in v:
+        return "Same"
+    if "more" in v or "worse" in v or "higher" in v:
+        return "Worse"
+    if "not available" in v or "too small" in v or "not applicable" in v:
+        return "Not Available"
+    return None
 
 
 METRICS_MERGE = """

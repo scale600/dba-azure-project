@@ -1,6 +1,7 @@
 # Environment & secrets
 .env
 local.settings.json
+dba-azure-project-kor.md
 
 # Python
 __pycache__/
@@ -26,3 +27,12 @@ package-lock.json
 
 # Azure Functions
 .python_packages/
+
+# Playwright / test artifacts
+.playwright-mcp/
+
+# Screenshots (dev verification only)
+*.png
+
+# Generated build artifacts
+site/dashboard_data.json
