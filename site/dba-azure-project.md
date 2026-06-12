@@ -48,7 +48,7 @@ A portfolio project demonstrating end-to-end data engineering and DBA competenci
 | Azure SQL Database | ✅ |
 | Azure Function App — Timer Trigger (ETL scheduler) | ✅ |
 | Azure Function App — HTTP Trigger (REST API) | ✅ |
-| Power BI Dashboard | ✅ |
+| Power BI Dashboard | ✅ (replaced by Chart.js custom dashboard — Power BI requires Windows/org account) |
 | Azure Key Vault (secret management) | ✅ |
 | Web frontend | ✅ (live dashboard at /dashboard.html) |
 
@@ -753,8 +753,8 @@ az sql db restore \
   - `vw_ETLOperations` — ETL run history with DurationSec (Page 4)
 - [x] Write all DAX measures → `bi/dax_measures.dax` (22 measures across 4 pages)
 - [x] Document Power BI connection + report design → `bi/powerbi_setup.md`
-- [ ] Connect Power BI Desktop (Windows) → build .pbix → publish to Power BI Service
-- [ ] Verify TC-08 (refresh under 30 seconds)
+- [x] BI layer replaced by custom Chart.js dashboard (`site/dashboard.html`) — Power BI Desktop is Windows-only and Power BI Service requires an organizational account (personal Microsoft accounts not supported). Custom dashboard delivers equivalent visualization: 4 charts + KPI cards + ETL log, live at `/dashboard.html`
+- [x] TC-08 (load time) — dashboard renders instantly from embedded snapshot; live API updates within 15s
 
 ---
 
@@ -778,5 +778,5 @@ az sql db restore \
 - [x] Switch GitHub repository to Public — https://github.com/scale600/dba-azure-project
 - [ ] Add ASCII architecture diagram
 - [x] GitHub Actions — daily dashboard rebuild + SWA auto-deploy (`deploy-dashboard.yml`, 01:00 UTC)
-- [ ] Run full test plan TC-01 ~ TC-08
+- [x] Run full test plan TC-01 ~ TC-07 ✅ (TC-08 replaced — see Phase 8)
 - [x] Final secret exposure check — git history clean, no credentials ever committed
