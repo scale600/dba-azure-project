@@ -779,4 +779,4 @@ az sql db restore \
 - [ ] Add ASCII architecture diagram
 - [ ] GitHub Actions CI — SQL lint on PR
 - [ ] Run full test plan TC-01 ~ TC-08
-- [ ] Final secret exposure check
+- [x] Final secret exposure check — git history clean, no credentials ever committed
