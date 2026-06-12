@@ -1,5 +1,5 @@
 @description('Location for Function App resources')
-param location string = 'westus3'
+param location string = 'eastus'
 
 @description('Key Vault URI (from main.bicep output)')
 param keyVaultUri string

@@ -6,6 +6,8 @@ The goal was to connect all the pieces end-to-end: automated ETL, cloud infrastr
 
 **Live:** https://www.dba-azure.techcloudup.com
 
+> **Note:** The ETL pipeline and REST API code are fully implemented and runnable locally. Deploying the Azure Function App requires a Pay-As-You-Go subscription (Free Trial does not allocate vCPU quota for compute resources). The database, dashboard, and monitoring infrastructure are live on Azure.
+
 ---
 
 ## Architecture
