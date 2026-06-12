@@ -151,6 +151,9 @@ tr:last-child td{{border-bottom:none}}
 .status-ok{{color:#4ade80;font-weight:600}}
 .status-fail{{color:#f87171;font-weight:600}}
 .status-run{{color:#fbbf24;font-weight:600}}
+.btn-export{{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);transition:all .15s}}
+.btn-export:hover{{background:rgba(59,130,246,.15);color:#60a5fa;border-color:#3b82f6}}
+.btn-export:disabled{{opacity:.4;cursor:not-allowed}}
 
 @media(max-width:680px){{
   aside{{display:none}}
@@ -198,6 +201,7 @@ tr:last-child td{{border-bottom:none}}
     <div style="display:flex;align-items:center;gap:12px">
       <span class="badge snap" id="data-badge">SNAPSHOT</span>
       <span class="generated" id="gen-time"></span>
+      <button class="btn-export" id="btn-all-hospitals" onclick="exportAllHospitals()">↓ All Hospitals</button>
     </div>
   </div>
 
@@ -254,7 +258,10 @@ tr:last-child td{{border-bottom:none}}
     <!-- Charts Row 1 -->
     <div class="charts-grid wide" id="hospitals">
       <div class="card">
-        <div class="card-title">Hospitals by State (Top 20)</div>
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Hospitals by State (Top 20)</span>
+          <button class="btn-export" onclick="exportStates()">↓ CSV</button>
+        </div>
         <div class="chart-wrap"><canvas id="chartStates"></canvas></div>
       </div>
       <div class="card">
@@ -279,7 +286,10 @@ tr:last-child td{{border-bottom:none}}
     <div class="card" id="etl">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>ETL Run History</span>
-        <span class="badge live">LIVE</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-export" onclick="exportETL()">↓ CSV</button>
+          <span class="badge live">LIVE</span>
+        </div>
       </div>
       <table>
         <thead>
@@ -299,6 +309,55 @@ tr:last-child td{{border-bottom:none}}
 {data_js}
 
 const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
+
+// ── CSV Export ────────────────────────────────────────────────────────────────
+function downloadCSV(filename, headers, rows) {{
+  const escape = v => {{ const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${{s.replace(/"/g,'""')}}"` : s; }};
+  const lines = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {{type:'text/csv'}}));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}}
+
+function exportStates() {{
+  const src = window._liveStates || DB_DATA.top_states.map(d => ({{
+    state: d.state, total_hospitals: d.hospitals, avg_rating: d.avg_rating,
+    with_emergency: '', top_rated_count: ''
+  }}));
+  downloadCSV('hospital_states.csv', ['state','total_hospitals','avg_rating','with_emergency','top_rated_count'], src);
+}}
+
+function exportETL() {{
+  downloadCSV('etl_log.csv', ['log_id','run_start','status','hospitals_loaded','metrics_loaded','duration_sec'], DB_DATA.etl_log);
+}}
+
+async function exportAllHospitals() {{
+  const btn = document.getElementById('btn-all-hospitals');
+  btn.disabled = true; btn.textContent = '⏳ Fetching…';
+  try {{
+    let all = [], offset = 0, total = Infinity;
+    while (all.length < total) {{
+      const res = await fetch(`${{API}}/hospitals?limit=500&offset=${{offset}}`, {{signal: AbortSignal.timeout(30000)}});
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      total = d.total;
+      all = all.concat(d.data);
+      offset += d.data.length;
+      btn.textContent = `⏳ ${{all.length}}/${{total}}`;
+      if (d.data.length === 0) break;
+    }}
+    downloadCSV('hospitals_all.csv',
+      ['FacilityID','FacilityName','City','State','ZipCode','HospitalType','EmergencyServices','OverallRating'],
+      all);
+    btn.textContent = `✓ ${{all.length}} rows`;
+    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 3000);
+  }} catch (_) {{
+    btn.textContent = '✗ Failed';
+    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 2000);
+  }}
+}}
 
 function setBadge(live) {{
   const el = document.getElementById('data-badge');
@@ -392,6 +451,7 @@ new Chart(document.getElementById('chartNational'), {{
     const hospitalsData = await hospitalsRes.json();
 
     const top20 = statesData.data.slice(0, 20);
+    window._liveStates = statesData.data;
     chartStates.data.labels = top20.map(d => d.state);
     chartStates.data.datasets[0].data = top20.map(d => d.total_hospitals);
     chartStates.update();
