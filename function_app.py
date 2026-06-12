@@ -1,13 +1,8 @@
 """
-Azure Functions v2 — DBA Azure Project REST API
-All HTTP triggers in a single file (Python programming model v2).
-
-Endpoints:
-  GET /api/hospitals                       list + filter + pagination
-  GET /api/hospitals/{facility_id}         single hospital detail
-  GET /api/hospitals/{facility_id}/metrics metrics history
-  GET /api/states/summary                  aggregate per state
-  GET /api/metrics/top                     ranked hospitals by score
+Azure Functions v2 — DBA Azure Project
+Triggers:
+  Timer  — ETL (CRON 0 0 0,12 * * *  UTC, twice daily)
+  HTTP   — REST API (5 endpoints)
 """
 
 import json
@@ -22,6 +17,17 @@ from api.db import query
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Timer Trigger — ETL (00:00 and 12:00 UTC daily)
+# ---------------------------------------------------------------------------
+
+@app.timer_trigger(schedule="0 0 0,12 * * *", arg_name="timer", run_on_startup=False)
+def etl_timer(timer: func.TimerRequest) -> None:
+    log.info("ETL timer trigger fired. past_due=%s", timer.past_due)
+    from etl.etl_runner import run_etl
+    run_etl()
 
 
 # ---------------------------------------------------------------------------

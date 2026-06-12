@@ -113,7 +113,7 @@ tr:last-child td{border-bottom:none}
   <div class="topbar">
     <h1>Hospital Quality Dashboard</h1>
     <div style="display:flex;align-items:center;gap:12px">
-      <span class="badge live">LIVE DATA</span>
+      <span class="badge snap" id="data-badge">SNAPSHOT</span>
       <span class="generated" id="gen-time"></span>
     </div>
   </div>
@@ -452,117 +452,129 @@ const DB_DATA = {
   ]
 };
 
-// KPIs
-const kpi = DB_DATA.kpi;
-document.getElementById('kpi-hospitals').textContent = kpi.total_hospitals.toLocaleString();
-document.getElementById('kpi-rating').textContent = (kpi.avg_rating||0).toFixed(2) + ' ★';
-document.getElementById('kpi-emergency').textContent = kpi.with_emergency.toLocaleString();
-document.getElementById('kpi-metrics').textContent = DB_DATA.metrics_count.toLocaleString();
-document.getElementById('gen-time').textContent = 'Updated: ' + DB_DATA.generated_at;
+const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
 
-// Chart defaults
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function setBadge(live) {
+  const el = document.getElementById('data-badge');
+  if (live) {
+    el.textContent = '● LIVE';
+    el.className = 'badge live';
+  } else {
+    el.textContent = 'SNAPSHOT';
+    el.className = 'badge snap';
+  }
+}
+
+function renderKPIs(kpi, metricsCount) {
+  document.getElementById('kpi-hospitals').textContent = kpi.total_hospitals.toLocaleString();
+  document.getElementById('kpi-rating').textContent = (+kpi.avg_rating||0).toFixed(2) + ' ★';
+  document.getElementById('kpi-emergency').textContent = kpi.with_emergency.toLocaleString();
+  document.getElementById('kpi-metrics').textContent = metricsCount.toLocaleString();
+}
+
+function renderETL(rows) {
+  const tbody = document.getElementById('etl-body');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const cls = r.status === 'SUCCESS' ? 'status-ok' : r.status === 'FAILED' ? 'status-fail' : 'status-run';
+    tbody.innerHTML += `<tr>
+      <td>#${r.log_id}</td>
+      <td>${r.run_start||'—'}</td>
+      <td class="${cls}">${r.status}</td>
+      <td>${(r.hospitals_loaded||0).toLocaleString()}</td>
+      <td>${(r.metrics_loaded||0).toLocaleString()}</td>
+      <td>${r.duration_sec != null ? r.duration_sec + 's' : '—'}</td>
+    </tr>`;
+  });
+}
+
+// ── Step 1: Render snapshot immediately ──────────────────────────────────────
+renderKPIs(DB_DATA.kpi, DB_DATA.metrics_count);
+document.getElementById('gen-time').textContent = 'Snapshot: ' + DB_DATA.generated_at;
+renderETL(DB_DATA.etl_log);
+
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#334155';
 
-// State bar chart
-new Chart(document.getElementById('chartStates'), {
+const chartStates = new Chart(document.getElementById('chartStates'), {
   type: 'bar',
   data: {
     labels: DB_DATA.top_states.map(d => d.state),
-    datasets: [{
-      label: 'Hospitals',
-      data: DB_DATA.top_states.map(d => d.hospitals),
-      backgroundColor: 'rgba(59,130,246,0.7)',
-      borderRadius: 4,
-    }]
+    datasets: [{ label: 'Hospitals', data: DB_DATA.top_states.map(d => d.hospitals), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 }]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-      y: { grid: { color: '#1e293b' }, beginAtZero: true }
-    }
+    scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: '#1e293b' }, beginAtZero: true } }
   }
 });
 
-// Rating doughnut
 const rColors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6'];
 new Chart(document.getElementById('chartRating'), {
   type: 'doughnut',
-  data: {
-    labels: DB_DATA.rating_dist.map(d => d.rating + ' Star'),
-    datasets: [{
-      data: DB_DATA.rating_dist.map(d => d.count),
-      backgroundColor: rColors,
-      borderWidth: 2, borderColor: '#1e293b',
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } },
-    }
-  }
+  data: { labels: DB_DATA.rating_dist.map(d => d.rating + ' Star'), datasets: [{ data: DB_DATA.rating_dist.map(d => d.count), backgroundColor: rColors, borderWidth: 2, borderColor: '#1e293b' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } } } }
 });
 
-// Hospital types bar
 const typeColors = ['#3b82f6','#22c55e','#a855f7','#f97316','#14b8a6','#f43f5e','#84cc16'];
 new Chart(document.getElementById('chartTypes'), {
   type: 'bar',
   data: {
     labels: DB_DATA.hospital_types.map(d => d.type.length > 25 ? d.type.substring(0,22)+'...' : d.type),
-    datasets: [{
-      label: 'Count',
-      data: DB_DATA.hospital_types.map(d => d.count),
-      backgroundColor: typeColors,
-      borderRadius: 4,
-    }]
+    datasets: [{ label: 'Count', data: DB_DATA.hospital_types.map(d => d.count), backgroundColor: typeColors, borderRadius: 4 }]
   },
-  options: {
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { color: '#1e293b' }, beginAtZero: true },
-      y: { grid: { display: false }, ticks: { font: { size: 10 } } }
-    }
-  }
+  options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#1e293b' }, beginAtZero: true }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
 });
 
-// National comparison doughnut
 const natColors = { 'Better':'#22c55e','Same':'#3b82f6','Worse':'#ef4444','Not Available':'#64748b' };
 new Chart(document.getElementById('chartNational'), {
   type: 'doughnut',
-  data: {
-    labels: DB_DATA.national_comparison.map(d => d.result),
-    datasets: [{
-      data: DB_DATA.national_comparison.map(d => d.count),
-      backgroundColor: DB_DATA.national_comparison.map(d => natColors[d.result]||'#64748b'),
-      borderWidth: 2, borderColor: '#1e293b',
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } },
-    }
-  }
+  data: { labels: DB_DATA.national_comparison.map(d => d.result), datasets: [{ data: DB_DATA.national_comparison.map(d => d.count), backgroundColor: DB_DATA.national_comparison.map(d => natColors[d.result]||'#64748b'), borderWidth: 2, borderColor: '#1e293b' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } } } }
 });
 
-// ETL table
-const tbody = document.getElementById('etl-body');
-DB_DATA.etl_log.forEach(r => {
-  const cls = r.status === 'SUCCESS' ? 'status-ok' : r.status === 'FAILED' ? 'status-fail' : 'status-run';
-  tbody.innerHTML += `<tr>
-    <td>#${r.log_id}</td>
-    <td>${r.run_start||'—'}</td>
-    <td class="${cls}">${r.status}</td>
-    <td>${(r.hospitals_loaded||0).toLocaleString()}</td>
-    <td>${(r.metrics_loaded||0).toLocaleString()}</td>
-    <td>${r.duration_sec != null ? r.duration_sec + 's' : '—'}</td>
-  </tr>`;
-});
+// ── Step 2: Try live API in background ───────────────────────────────────────
+(async () => {
+  try {
+    const [statesRes, hospitalsRes] = await Promise.all([
+      fetch(API + '/states/summary', { signal: AbortSignal.timeout(15000) }),
+      fetch(API + '/hospitals?limit=1', { signal: AbortSignal.timeout(15000) }),
+    ]);
+    if (!statesRes.ok || !hospitalsRes.ok) throw new Error('API error');
+
+    const statesData   = await statesRes.json();
+    const hospitalsData = await hospitalsRes.json();
+
+    // Update states chart with live data (top 20 by hospital count)
+    const top20 = statesData.data.slice(0, 20);
+    chartStates.data.labels = top20.map(d => d.state);
+    chartStates.data.datasets[0].data = top20.map(d => d.total_hospitals);
+    chartStates.update();
+
+    // Recompute KPIs from live state summary
+    const totalHospitals = hospitalsData.total;
+    const withEmergency  = statesData.data.reduce((s, d) => s + (d.with_emergency||0), 0);
+    const ratedStates    = statesData.data.filter(d => d.avg_rating > 0);
+    const avgRating      = ratedStates.length
+      ? ratedStates.reduce((s, d) => s + (+d.avg_rating * d.total_hospitals), 0) /
+        ratedStates.reduce((s, d) => s + d.total_hospitals, 0)
+      : DB_DATA.kpi.avg_rating;
+
+    renderKPIs(
+      { total_hospitals: totalHospitals, avg_rating: avgRating, with_emergency: withEmergency },
+      DB_DATA.metrics_count
+    );
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
+    document.getElementById('gen-time').textContent = 'Live: ' + now;
+    setBadge(true);
+
+  } catch (_) {
+    // API unreachable or timed out — snapshot remains, no visual change needed
+    setBadge(false);
+  }
+})();
 </script>
 </body>
 </html>

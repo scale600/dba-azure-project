@@ -47,20 +47,14 @@ def _get_conn_str() -> str:
     if conn_str:
         return conn_str
 
-    # Fallback: build from individual vars
-    server   = os.getenv("SQL_SERVER", "")
-    database = os.getenv("SQL_DATABASE", "HospitalDB")
-    uid      = os.getenv("SQL_ADMIN_LOGIN", "")
-    pwd      = os.getenv("SQL_ADMIN_PASSWORD", "")
-    if not (server and uid and pwd):
-        raise EnvironmentError(
-            "Set DB_CONNECTION_STRING or SQL_SERVER/SQL_ADMIN_LOGIN/SQL_ADMIN_PASSWORD"
-        )
-    return (
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-        f"SERVER={server};DATABASE={database};UID={uid};PWD={pwd};"
-        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
-    )
+    kv_url = os.getenv("AZURE_KEY_VAULT_URL")
+    if kv_url:
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+        client = SecretClient(vault_url=kv_url, credential=DefaultAzureCredential())
+        return client.get_secret("DB-CONNECTION-STRING").value
+
+    raise EnvironmentError("Set DB_CONNECTION_STRING or AZURE_KEY_VAULT_URL")
 
 
 # ---------------------------------------------------------------------------
