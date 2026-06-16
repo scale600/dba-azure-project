@@ -565,9 +565,9 @@ resource sqlDB 'Microsoft.Sql/servers/databases@2021-11-01' = {
 | Resource | Name | Location | Status |
 |----------|------|----------|--------|
 | Resource Group | `rg-dba-project` | East US | ✅ Active |
-| Azure DNS Zone | `dba-azure.techcloudup.com` | Global | ✅ Active |
 | Azure Static Web Apps | `swa-dba-project` | East US 2 | ✅ Active |
 | Custom Domain | `www.dba-azure.techcloudup.com` | — | ✅ Ready (SSL) |
+| DNS | Cloudflare (`techcloudup.com` zone) | — | ✅ Active (apex → www 301 redirect) |
 | Azure Key Vault | `kv-dba-xvel6ncdvw` | East US | ✅ Active |
 | Azure SQL Server | `sql-dba-xvel6ncdvwsre` | West US 3 | ✅ Active |
 | Azure SQL Database | `HospitalDB` | West US 3 | ✅ Active (Serverless GP_S_Gen5_1) |
@@ -657,7 +657,7 @@ dba-azure-project/
 ### Phase 2 — Azure Infrastructure Setup
 
 - [x] Resource Group (`rg-dba-project`, `eastus`)
-- [x] Azure DNS Zone (`dba-azure.techcloudup.com`) — Cloudflare NS delegation complete
+- [x] DNS managed via Cloudflare (`techcloudup.com` zone) — apex `dba-azure.techcloudup.com` → 301 redirect to `www`. Azure DNS Zone deleted (no longer needed)
 - [x] Azure Static Web Apps (`swa-dba-project`) — `www.dba-azure.techcloudup.com` live
 - [x] Azure Key Vault (`kv-dba-xvel6ncdvw`, `eastus`) — `DB-CONNECTION-STRING` registered
 - [x] Deploy `main.bicep` — SQL Server (`sql-dba-xvel6ncdvwsre`, `westus3`) + `HospitalDB` + Log Analytics + App Insights
