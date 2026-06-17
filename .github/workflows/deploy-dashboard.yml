@@ -1,6 +1,13 @@
 name: Deploy Dashboard
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - build_dashboard.py
+      - site/**
+      - .github/workflows/deploy-dashboard.yml
   schedule:
     - cron: '0 1 * * *'   # 매일 01:00 UTC (ETL 완료 후 1시간)
   workflow_dispatch:        # 수동 실행 버튼

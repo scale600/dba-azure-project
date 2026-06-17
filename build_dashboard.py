@@ -168,9 +168,43 @@ tr:last-child td{{border-bottom:none}}
 .btn-export-lg:hover{{background:rgba(59,130,246,.25);border-color:#3b82f6}}
 .btn-export-lg:disabled{{opacity:.4;cursor:not-allowed}}
 
+/* About section */
+.about-grid{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}
+@media(max-width:900px){{.about-grid{{grid-template-columns:1fr}}}}
+.about-desc{{font-size:14px;line-height:1.7;color:var(--muted)}}
+.about-desc p{{margin-bottom:12px}}
+.about-note{{font-size:12px;color:#64748b;border-left:2px solid var(--border);padding-left:12px;margin-top:8px}}
+.about-label{{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}}
+.tech-badges{{display:flex;flex-wrap:wrap;gap:6px}}
+.tech-badge{{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}}
+.tech-badge.python{{background:rgba(234,179,8,.12);color:#fbbf24}}
+.tech-badge.azure{{background:rgba(59,130,246,.12);color:#60a5fa}}
+.tech-badge.misc{{background:rgba(148,163,184,.1);color:#94a3b8}}
+.data-sources{{display:flex;flex-direction:column;gap:6px}}
+.data-src{{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--border)}}
+.data-src-name{{font-size:12px;font-weight:600;color:var(--text)}}
+.data-src-detail{{font-size:11px;color:var(--muted)}}
+
+/* How it works section */
+.flow-steps{{display:flex;align-items:flex-start;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:20px}}
+.flow-step{{display:flex;flex-direction:column;align-items:center;text-align:center;width:150px;gap:8px}}
+.flow-icon{{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center}}
+.flow-title{{font-size:12px;font-weight:700;color:var(--text)}}
+.flow-desc{{font-size:11px;color:var(--muted);line-height:1.4}}
+.flow-arrow{{font-size:20px;color:var(--border);padding:10px 8px 0;align-self:flex-start;margin-top:10px}}
+.flow-details{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;border-top:1px solid var(--border);padding-top:16px}}
+.flow-detail{{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.02)}}
+.flow-detail-label{{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}}
+.flow-detail-value{{font-size:12px;color:var(--text)}}
+
+/* Nav separator */
+.nav-sep{{height:1px;background:var(--border);margin:6px 16px}}
+
 @media(max-width:680px){{
   aside{{display:none}}
   .content{{padding:16px}}
+  .flow-steps{{flex-direction:column;align-items:center}}
+  .flow-arrow{{transform:rotate(90deg);padding:4px 0}}
 }}
 </style>
 </head>
@@ -181,13 +215,9 @@ tr:last-child td{{border-bottom:none}}
     <span>DBA Azure<br/>Project</span>
   </div>
   <nav>
-    <a href="dashboard.html" class="active">
+    <a href="#dashboard" class="active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
       Dashboard
-    </a>
-    <a href="index.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-      Project Docs
     </a>
     <a href="#hospitals">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -204,6 +234,19 @@ tr:last-child td{{border-bottom:none}}
     <a href="#export">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Data Export
+    </a>
+    <div class="nav-sep"></div>
+    <a href="#about">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      About
+    </a>
+    <a href="#how-it-works">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      How It Works
+    </a>
+    <a href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Project Docs
     </a>
   </nav>
   <div class="sidebar-footer">
@@ -224,7 +267,7 @@ tr:last-child td{{border-bottom:none}}
   <div class="content">
 
     <!-- KPI Row -->
-    <div class="kpi-grid">
+    <div class="kpi-grid" id="dashboard">
       <div class="kpi">
         <div class="kpi-header">
           <div class="kpi-icon blue">
@@ -370,6 +413,98 @@ tr:last-child td{{border-bottom:none}}
           <button class="btn-export-lg" onclick="exportETL()">↓ CSV</button>
         </div>
 
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="card" id="about">
+      <div class="card-title">About This Project</div>
+      <div class="about-grid">
+        <div class="about-desc">
+          <p>An end-to-end data pipeline that pulls US hospital quality data from the CMS (Centers for Medicare &amp; Medicaid Services) public API, loads it into Azure SQL Database via automated ETL, and serves it through a REST API and this interactive dashboard.</p>
+          <p>Built to demonstrate DBA fundamentals — schema design, index tuning, backup &amp; recovery — alongside cloud data engineering with Azure managed services.</p>
+          <div class="about-note">The CMS datasets are publicly available and fully de-identified under HIPAA Safe Harbor (45 CFR &sect;164.514(b)). No Protected Health Information is involved.</div>
+        </div>
+        <div class="about-meta">
+          <div class="about-label">Tech Stack</div>
+          <div class="tech-badges">
+            <span class="tech-badge python">Python 3.11</span>
+            <span class="tech-badge azure">Azure Functions</span>
+            <span class="tech-badge azure">Azure SQL</span>
+            <span class="tech-badge azure">Key Vault</span>
+            <span class="tech-badge azure">App Insights</span>
+            <span class="tech-badge misc">Bicep (IaC)</span>
+            <span class="tech-badge misc">Chart.js</span>
+            <span class="tech-badge misc">GitHub Actions</span>
+          </div>
+          <div class="about-label" style="margin-top:14px">Data Sources (CMS Public API)</div>
+          <div class="data-sources">
+            <div class="data-src">
+              <span class="data-src-name">Hospital General Information</span>
+              <span class="data-src-detail">~5,400 records &middot; Quarterly</span>
+            </div>
+            <div class="data-src">
+              <span class="data-src-name">Unplanned Hospital Visits</span>
+              <span class="data-src-detail">~67,000 metrics &middot; Quarterly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="card" id="how-it-works">
+      <div class="card-title">How It Works</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-icon" style="background:rgba(34,197,94,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="flow-title">CMS Public API</div>
+          <div class="flow-desc">HTTP GET, no auth<br/>Quarterly data updates</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <div class="flow-icon" style="background:rgba(59,130,246,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="flow-title">Azure Function App</div>
+          <div class="flow-desc">Timer Trigger (CRON)<br/>ETL runs twice daily</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <div class="flow-icon" style="background:rgba(168,85,247,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div class="flow-title">Azure SQL Database</div>
+          <div class="flow-desc">Serverless tier, 3 tables<br/>MERGE upsert, no duplicates</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <div class="flow-icon" style="background:rgba(234,179,8,.15)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          </div>
+          <div class="flow-title">REST API + Dashboard</div>
+          <div class="flow-desc">5 API endpoints<br/>Chart.js + CSV export</div>
+        </div>
+      </div>
+      <div class="flow-details">
+        <div class="flow-detail">
+          <span class="flow-detail-label">ETL Schedule</span>
+          <span class="flow-detail-value">UTC 00:00 &amp; 12:00 daily</span>
+        </div>
+        <div class="flow-detail">
+          <span class="flow-detail-label">Upsert Strategy</span>
+          <span class="flow-detail-value">SQL MERGE on FacilityID &mdash; idempotent, no duplicates</span>
+        </div>
+        <div class="flow-detail">
+          <span class="flow-detail-label">Secret Management</span>
+          <span class="flow-detail-value">Azure Key Vault + Managed Identity</span>
+        </div>
+        <div class="flow-detail">
+          <span class="flow-detail-label">Monitoring</span>
+          <span class="flow-detail-value">Application Insights + Azure Monitor alerts</span>
+        </div>
       </div>
     </div>
 
@@ -537,6 +672,31 @@ new Chart(document.getElementById('chartNational'), {{
   data: {{ labels: DB_DATA.national_comparison.map(d => d.result), datasets: [{{ data: DB_DATA.national_comparison.map(d => d.count), backgroundColor: DB_DATA.national_comparison.map(d => natColors[d.result]||'#64748b'), borderWidth: 2, borderColor: '#1e293b' }}] }},
   options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ font: {{ size: 11 }}, padding: 10 }} }} }} }}
 }});
+
+// ── Nav active state (IntersectionObserver) ─────────────────────────────────
+(function() {{
+  const sections = ['about','how-it-works','dashboard','hospitals','metrics','etl','export'];
+  const links = document.querySelectorAll('nav a[href^="#"]');
+  const observer = new IntersectionObserver(function(entries) {{
+    entries.forEach(function(e) {{
+      if (e.isIntersecting) {{
+        links.forEach(function(a) {{ a.classList.remove('active'); }});
+        var match = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (match) match.classList.add('active');
+      }}
+    }});
+  }}, {{ rootMargin: '-20% 0px -60% 0px' }});
+  sections.forEach(function(id) {{
+    var el = document.getElementById(id);
+    if (el) observer.observe(el);
+  }});
+  links.forEach(function(a) {{
+    a.addEventListener('click', function() {{
+      links.forEach(function(l) {{ l.classList.remove('active'); }});
+      a.classList.add('active');
+    }});
+  }});
+}})();
 
 // ── Step 2: Try live API in background ───────────────────────────────────────
 (async () => {{
