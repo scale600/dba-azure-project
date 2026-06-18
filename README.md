@@ -261,6 +261,7 @@ Current low-cost operating mode, applied on 2026-06-18:
 | Function App `func-dba-xvel6ncdvwsre` | Stopped | Prevents Timer/API traffic from waking the database |
 | SQL Database `HospitalDB` | Serverless `GP_S_Gen5_1`, auto-pause after 15 minutes | Compute cost stops while paused |
 | SQL Database `HospitalDB` | Max size reduced from 32 GB to 5 GB | Lowers provisioned data storage cost without deleting data |
+| Dashboard `site/dashboard.html` | Shows `API DISABLED` notice; live API refresh and full exports disabled | Keeps the public dashboard usable from embedded snapshot data without waking the API/SQL path |
 
 Useful commands:
 
@@ -298,6 +299,8 @@ az sql db show \
 ```
 
 Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API tests, or dashboard build scripts while minimizing cost. Any login attempt can resume a paused serverless SQL database.
+
+To re-enable live dashboard/API behavior, start the Function App, set `API_DISABLED = false` in `site/dashboard.html` and `build_dashboard.py`, then redeploy Azure Static Web Apps.
 
 ---
 

@@ -587,6 +587,7 @@ Current low-cost operating mode was applied on 2026-06-18:
 | Function App `func-dba-xvel6ncdvwsre` | Stopped | Prevents Timer/API traffic from waking the database |
 | SQL Database `HospitalDB` | Serverless `GP_S_Gen5_1`, auto-pause after 15 minutes | Compute cost stops while paused |
 | SQL Database `HospitalDB` | Max size reduced from 32 GB to 5 GB | Lowers provisioned data storage cost without deleting data |
+| Dashboard `site/dashboard.html` | Shows `API DISABLED` notice; live API refresh and full exports disabled | Keeps the public dashboard usable from embedded snapshot data without waking the API/SQL path |
 
 ```bash
 # stop ETL/API triggers
@@ -622,6 +623,8 @@ az sql db show \
 ```
 
 Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API tests, or dashboard build scripts while minimizing cost. Any login attempt can resume a paused serverless SQL database.
+
+To re-enable live dashboard/API behavior, start the Function App, set `API_DISABLED = false` in `site/dashboard.html` and `build_dashboard.py`, then redeploy Azure Static Web Apps.
 
 ---
 
@@ -711,7 +714,7 @@ dba-azure-project/
 - [x] Test Azure SQL connection — `pyodbc` connected, `HospitalDB` verified
 - [x] Function App (`func.bicep`) — deployed to `centralus` (`func-dba-xvel6ncdvwsre`)
 - [x] Function App Managed Identity → Key Vault access (`Key Vault Secrets Officer`)
-- [x] Cost control mode applied — Function App stopped, `HospitalDB` auto-pause set to 15 minutes, max size reduced to 5 GB
+- [x] Cost control mode applied — Function App stopped, `HospitalDB` auto-pause set to 15 minutes, max size reduced to 5 GB, dashboard shows `API DISABLED`
 
 ---
 
@@ -801,7 +804,7 @@ az sql db restore \
 - [x] Write all DAX measures → `bi/dax_measures.dax` (22 measures across 4 pages)
 - [x] Document Power BI connection + report design → `bi/powerbi_setup.md`
 - [x] BI layer replaced by custom Chart.js dashboard (`site/dashboard.html`) — Power BI Desktop is Windows-only and Power BI Service requires an organizational account (personal Microsoft accounts not supported). Custom dashboard delivers equivalent visualization: 4 charts + KPI cards + ETL log, live at `/dashboard.html`
-- [x] TC-08 (load time) — dashboard renders instantly from embedded snapshot; live API updates within 15s
+- [x] TC-08 (load time) — dashboard renders instantly from embedded snapshot; live API refresh is intentionally disabled in cost-control mode
 
 ---
 
@@ -814,7 +817,7 @@ az sql db restore \
   - `alert-db-connections-failed` — connection failures > 10, severity 2
   - `alert-db-deadlocks` — deadlocks > 0, severity 1
 - [x] Azure Portal dashboard — CPU, storage, connections, deadlocks → `monitoring/dashboard.json`
-- [x] Live web dashboard — `site/dashboard.html` (Chart.js, build-time DB snapshot, dark sidebar, 4 charts + ETL table)
+- [x] Live web dashboard — `site/dashboard.html` (Chart.js, build-time DB snapshot, dark sidebar, 4 charts + ETL table, `API DISABLED` cost-control notice)
 - [x] Deploy to Azure Static Web Apps — https://www.dba-azure.techcloudup.com/dashboard.html ✅ Live
 
 ---
