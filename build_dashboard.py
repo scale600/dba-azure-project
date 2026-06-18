@@ -113,11 +113,13 @@ nav a svg{{width:16px;height:16px;flex-shrink:0}}
 main{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
 .topbar{{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
 .topbar h1{{font-size:15px;font-weight:600}}
+.cost-notice{{border-bottom:1px solid var(--border);background:rgba(234,179,8,.08);color:#fbbf24;padding:8px 24px;font-size:12px;line-height:1.4;flex-shrink:0}}
 .badge{{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}}
 .badge.live{{background:rgba(34,197,94,.15);color:#4ade80}}
 .badge.live::before{{content:'';width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}}
 @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.4}}}}
 .badge.snap{{background:rgba(59,130,246,.15);color:#60a5fa}}
+.badge.disabled{{background:rgba(148,163,184,.12);color:#94a3b8}}
 .generated{{font-size:11px;color:var(--muted)}}
 
 .content{{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:24px}}
@@ -259,10 +261,11 @@ tr:last-child td{{border-bottom:none}}
   <div class="topbar">
     <h1>Hospital Quality Dashboard</h1>
     <div style="display:flex;align-items:center;gap:12px">
-      <span class="badge snap" id="data-badge">SNAPSHOT</span>
+      <span class="badge disabled" id="data-badge">API DISABLED</span>
       <span class="generated" id="gen-time"></span>
     </div>
   </div>
+  <div class="cost-notice">Notice: Live API and full export are disabled for cost efficiency. They can be re-enabled by starting the Azure Function App.</div>
 
   <div class="content">
 
@@ -295,7 +298,7 @@ tr:last-child td{{border-bottom:none}}
           <div class="kpi-icon green">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
           </div>
-          <span class="badge live">LIVE</span>
+          <span class="badge snap">SNAPSHOT</span>
         </div>
         <div class="kpi-value" id="kpi-emergency">—</div>
         <div class="kpi-label">Emergency Services</div>
@@ -306,7 +309,7 @@ tr:last-child td{{border-bottom:none}}
           <div class="kpi-icon purple">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
           </div>
-          <span class="badge live">LIVE</span>
+          <span class="badge snap">SNAPSHOT</span>
         </div>
         <div class="kpi-value" id="kpi-metrics">—</div>
         <div class="kpi-label">Quality Metrics</div>
@@ -346,7 +349,7 @@ tr:last-child td{{border-bottom:none}}
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>ETL Run History</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="badge live">LIVE</span>
+          <span class="badge disabled">DISABLED</span>
         </div>
       </div>
       <table>
@@ -374,7 +377,7 @@ tr:last-child td{{border-bottom:none}}
             <div class="export-desc">5,433 hospitals · 12 columns including address, phone, GPS coordinates</div>
             <div class="export-cols">FacilityID · FacilityName · Address · City · State · ZipCode · Phone · HospitalType · EmergencyServices · OverallRating · Latitude · Longitude</div>
           </div>
-          <button class="btn-export-lg" id="btn-all-hospitals" onclick="exportAllHospitals()">↓ CSV</button>
+          <button class="btn-export-lg" id="btn-all-hospitals" disabled title="Disabled while the Azure Function App is stopped for cost control">Disabled</button>
         </div>
 
         <div class="export-item">
@@ -386,7 +389,7 @@ tr:last-child td{{border-bottom:none}}
             <div class="export-desc">67,088 records · hospital-level clinical quality measures</div>
             <div class="export-cols">FacilityID · FacilityName · State · HospitalType · MeasureID · MeasureName · Score · ComparedToNational · NumberOfPatients · PeriodStart · PeriodEnd</div>
           </div>
-          <button class="btn-export-lg" id="btn-quality-metrics" onclick="exportQualityMetrics()">↓ CSV</button>
+          <button class="btn-export-lg" id="btn-quality-metrics" disabled title="Disabled while the Azure Function App is stopped for cost control">Disabled</button>
         </div>
 
         <div class="export-item">
@@ -515,6 +518,7 @@ tr:last-child td{{border-bottom:none}}
 {data_js}
 
 const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
+const API_DISABLED = true;
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
 function downloadCSV(filename, headers, rows) {{
@@ -596,6 +600,11 @@ async function exportQualityMetrics() {{
 
 function setBadge(live) {{
   const el = document.getElementById('data-badge');
+  if (API_DISABLED) {{
+    el.textContent = 'API DISABLED';
+    el.className = 'badge disabled';
+    return;
+  }}
   if (live) {{
     el.textContent = '● LIVE';
     el.className = 'badge live';
@@ -700,6 +709,10 @@ new Chart(document.getElementById('chartNational'), {{
 
 // ── Step 2: Try live API in background ───────────────────────────────────────
 (async () => {{
+  if (API_DISABLED) {{
+    setBadge(false);
+    return;
+  }}
   try {{
     const [statesRes, hospitalsRes] = await Promise.all([
       fetch(API + '/states/summary', {{ signal: AbortSignal.timeout(15000) }}),

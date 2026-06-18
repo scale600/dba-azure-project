@@ -95,7 +95,8 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
     capacity: 1
   }
   properties: {
-    autoPauseDelay: 60
+    autoPauseDelay: 15
+    maxSizeBytes: 5368709120
     minCapacity: json('0.5')
     collation: 'SQL_Latin1_General_CP1_CI_AS'
     zoneRedundant: false

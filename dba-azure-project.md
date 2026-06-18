@@ -552,7 +552,8 @@ resource sqlDB 'Microsoft.Sql/servers/databases@2021-11-01' = {
   properties: {
     // DB may be paused at each ETL run (12h interval), causing cold-start delay
     // If timeout errors occur, change to -1 (disable auto-pause)
-    autoPauseDelay: 60
+    autoPauseDelay: 15
+    maxSizeBytes: 5368709120  // 5 GB, current low-cost storage cap
     minCapacity: json('0.5')
   }
 }
@@ -570,12 +571,57 @@ resource sqlDB 'Microsoft.Sql/servers/databases@2021-11-01' = {
 | DNS | Cloudflare (`techcloudup.com` zone) | — | ✅ Active (apex → www 301 redirect) |
 | Azure Key Vault | `kv-dba-xvel6ncdvw` | East US | ✅ Active |
 | Azure SQL Server | `sql-dba-xvel6ncdvwsre` | West US 3 | ✅ Active |
-| Azure SQL Database | `HospitalDB` | West US 3 | ✅ Active (Serverless GP_S_Gen5_1) |
-| Azure Function App (ETL + API) | — | — | ⬜ Pending (VM quota) |
+| Azure SQL Database | `HospitalDB` | West US 3 | ✅ Active (Serverless GP_S_Gen5_1, auto-pause 15 min, max size 5 GB) |
+| Azure Function App (ETL + API) | `func-dba-xvel6ncdvwsre` | Central US | ⏸ Stopped for cost control |
 | Application Insights | `appi-dba-project` | East US | ✅ Active |
 | Power BI Workspace | — | — | ⬜ Pending |
 
 **Live URL:** https://www.dba-azure.techcloudup.com
+
+### Cost Control Mode
+
+Current low-cost operating mode was applied on 2026-06-18:
+
+| Resource | Setting | Cost impact |
+|----------|---------|-------------|
+| Function App `func-dba-xvel6ncdvwsre` | Stopped | Prevents Timer/API traffic from waking the database |
+| SQL Database `HospitalDB` | Serverless `GP_S_Gen5_1`, auto-pause after 15 minutes | Compute cost stops while paused |
+| SQL Database `HospitalDB` | Max size reduced from 32 GB to 5 GB | Lowers provisioned data storage cost without deleting data |
+
+```bash
+# stop ETL/API triggers
+az functionapp stop \
+  --resource-group rg-dba-project \
+  --name func-dba-xvel6ncdvwsre
+
+# keep SQL serverless auto-pause at the minimum delay
+az sql db update \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --auto-pause-delay 15
+
+# keep provisioned SQL storage at the current low-cost size
+az sql db update \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --max-size 5GB
+
+# verify current state
+az functionapp show \
+  --resource-group rg-dba-project \
+  --name func-dba-xvel6ncdvwsre \
+  --query "{name:name,state:state}"
+
+az sql db show \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --query "{status:status,pausedDate:pausedDate,autoPauseDelay:autoPauseDelay,maxSizeBytes:maxSizeBytes}"
+```
+
+Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API tests, or dashboard build scripts while minimizing cost. Any login attempt can resume a paused serverless SQL database.
 
 ---
 
@@ -665,6 +711,7 @@ dba-azure-project/
 - [x] Test Azure SQL connection — `pyodbc` connected, `HospitalDB` verified
 - [x] Function App (`func.bicep`) — deployed to `centralus` (`func-dba-xvel6ncdvwsre`)
 - [x] Function App Managed Identity → Key Vault access (`Key Vault Secrets Officer`)
+- [x] Cost control mode applied — Function App stopped, `HospitalDB` auto-pause set to 15 minutes, max size reduced to 5 GB
 
 ---
 
@@ -702,7 +749,7 @@ dba-azure-project/
 - [x] `GET /api/states/summary` — aggregate per state
 - [x] `GET /api/metrics/top` — ranked hospitals by score
 - [x] Error handling — standard `{"error", "message", "status"}` format
-- [x] Deploy to Azure Function App — live at `func-dba-xvel6ncdvwsre.azurewebsites.net`
+- [x] Deploy to Azure Function App — `func-dba-xvel6ncdvwsre.azurewebsites.net` (currently stopped for cost control)
 - [x] TC-06 (`GET /api/hospitals?state=CA` → 379 results) ✅
 - [x] TC-07 (`GET /api/hospitals/999999` → 404 NOT_FOUND) ✅
 

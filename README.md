@@ -252,6 +252,55 @@ The Function App's Managed Identity is granted `Key Vault Secrets User` on the v
 
 ---
 
+## Cost Control
+
+Current low-cost operating mode, applied on 2026-06-18:
+
+| Resource | Setting | Cost impact |
+|----------|---------|-------------|
+| Function App `func-dba-xvel6ncdvwsre` | Stopped | Prevents Timer/API traffic from waking the database |
+| SQL Database `HospitalDB` | Serverless `GP_S_Gen5_1`, auto-pause after 15 minutes | Compute cost stops while paused |
+| SQL Database `HospitalDB` | Max size reduced from 32 GB to 5 GB | Lowers provisioned data storage cost without deleting data |
+
+Useful commands:
+
+```bash
+# stop ETL/API triggers so they do not resume SQL compute
+az functionapp stop \
+  --resource-group rg-dba-project \
+  --name func-dba-xvel6ncdvwsre
+
+# keep SQL serverless auto-pause at the minimum delay
+az sql db update \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --auto-pause-delay 15
+
+# keep provisioned SQL storage at the current low-cost size
+az sql db update \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --max-size 5GB
+
+# verify current cost-control state
+az functionapp show \
+  --resource-group rg-dba-project \
+  --name func-dba-xvel6ncdvwsre \
+  --query "{name:name,state:state}"
+
+az sql db show \
+  --resource-group rg-dba-project \
+  --server sql-dba-xvel6ncdvwsre \
+  --name HospitalDB \
+  --query "{status:status,pausedDate:pausedDate,autoPauseDelay:autoPauseDelay,maxSizeBytes:maxSizeBytes}"
+```
+
+Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API tests, or dashboard build scripts while minimizing cost. Any login attempt can resume a paused serverless SQL database.
+
+---
+
 ## Live URLs
 
 | URL | Description |
