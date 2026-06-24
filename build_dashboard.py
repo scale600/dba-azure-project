@@ -246,7 +246,7 @@ tr:last-child td{{border-bottom:none}}
 @media(max-width:680px){{
   aside{{display:none}}
   .topbar{{height:auto;min-height:56px;padding:8px 16px;flex-wrap:wrap;gap:6px}}
-  .topbar h1{{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}}
+  .topbar h1{{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}}
   .topbar-links{{gap:8px;order:2}}
   .theme-toggle{{background:none;border:none;padding:0;color:#64748b}}
   .theme-toggle:hover{{color:#e2e8f0;background:none}}
