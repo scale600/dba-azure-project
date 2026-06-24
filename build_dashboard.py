@@ -104,7 +104,7 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgro
 
 /* Sidebar */
 aside{{width:220px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}}
-.sidebar-logo{{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}}
+.sidebar-logo{{padding:24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}}
 .sidebar-logo svg{{color:var(--accent)}}
 .sidebar-logo span{{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}}
 nav{{padding:12px 0;flex:1}}
@@ -116,7 +116,7 @@ nav a svg{{width:16px;height:16px;flex-shrink:0}}
 
 /* Main */
 main{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
-.topbar{{height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
+.topbar{{height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
 .topbar h1{{font-size:15px;font-weight:600}}
 .cost-notice{{border-bottom:1px solid var(--border);background:rgba(234,179,8,.08);color:#fbbf24;padding:8px 24px;font-size:12px;line-height:1.4;flex-shrink:0}}
 .badge{{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}}
