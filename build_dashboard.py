@@ -247,8 +247,8 @@ tr:last-child td{{border-bottom:none}}
   aside{{display:none}}
   .topbar{{height:auto;min-height:56px;padding:8px 16px;flex-wrap:wrap;gap:6px}}
   .topbar h1{{font-size:26px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}}
-  .topbar-links{{gap:8px;order:3;margin-right:0}}
-  .theme-toggle{{background:none;border:none;cursor:pointer;color:#64748b;display:flex;align-items:center;padding:0;transition:color .15s;order:2}}
+  .topbar-links{{gap:8px;order:2;margin-right:0}}
+  .theme-toggle{{background:none;border:none;cursor:pointer;color:#64748b;display:flex;align-items:center;padding:0;transition:color .15s;order:3;margin-left:auto}}
   .theme-toggle:hover{{color:#e2e8f0;background:none}}
   .theme-toggle .theme-label{{display:none}}
   .theme-toggle svg{{width:16px;height:16px}}
