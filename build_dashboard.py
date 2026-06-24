@@ -219,12 +219,37 @@ tr:last-child td{{border-bottom:none}}
 /* Nav separator */
 .nav-sep{{height:1px;background:var(--border);margin:6px 16px}}
 
+/* Mobile section nav (hidden on desktop) */
+.mobile-nav{{display:none}}
+
 @media(max-width:680px){{
   aside{{display:none}}
-  .topbar{{height:90px}}
-  .content{{padding:16px}}
+  .topbar{{height:auto;min-height:56px;padding:8px 16px;flex-wrap:wrap;gap:6px}}
+  .topbar h1{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none}}
+  .topbar-links{{gap:8px;order:3;margin-right:0}}
+  .theme-toggle{{font-size:10px;padding:2px 8px;order:2}}
+  .topbar .badge,.topbar .generated{{font-size:10px;order:1}}
+  .content{{padding:20px 12px}}
+  .mobile-nav{{display:flex;overflow-x:auto;gap:0;border-bottom:1px solid var(--border);background:var(--sidebar);padding:0 4px;-webkit-overflow-scrolling:touch;flex-shrink:0}}
+  .mobile-nav a{{flex-shrink:0;padding:8px 10px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}}
+  .mobile-nav a.active{{border-bottom-color:var(--accent);color:var(--accent)}}
+  .mobile-nav a:hover{{color:var(--text)}}
+  .kpi{{padding:14px}}
+  .kpi-value{{font-size:24px}}
+  .kpi-label{{font-size:12px}}
+  .card-title{{font-size:12px}}
+  .chart-wrap{{height:180px}}
+  .export-cols{{display:none}}
+  .export-item{{padding:12px}}
+  .export-name{{font-size:13px}}
+  .export-desc{{font-size:11px}}
+  .about-grid{{grid-template-columns:1fr;gap:16px}}
+  .about-desc{{font-size:13px}}
+  table{{font-size:11px}}
+  th,td{{padding:6px 8px}}
   .flow-steps{{flex-direction:column;align-items:center}}
   .flow-arrow{{transform:rotate(90deg);padding:4px 0}}
+  .btn-export-lg{{padding:5px 12px;font-size:11px}}
 }}
 </style>
 </head>
@@ -300,6 +325,15 @@ tr:last-child td{{border-bottom:none}}
     </div>
   </div>
   <div class="cost-notice">Notice: Live API and full export are disabled for cost efficiency. They can be re-enabled by starting the Azure Function App.</div>
+  <nav class="mobile-nav" id="mobile-nav">
+    <a href="#dashboard" class="active">Dashboard</a>
+    <a href="#hospitals">Hospitals</a>
+    <a href="#metrics">Metrics</a>
+    <a href="#etl">ETL</a>
+    <a href="#export">Export</a>
+    <a href="#about">About</a>
+    <a href="#how-it-works">How It Works</a>
+  </nav>
 
   <div class="content">
 
