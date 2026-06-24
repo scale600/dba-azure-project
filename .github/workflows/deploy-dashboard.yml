@@ -34,6 +34,7 @@ jobs:
         run: pip install pyodbc azure-identity azure-keyvault-secrets requests
 
       - name: Build dashboard snapshot
+        continue-on-error: true
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
         run: python build_dashboard.py
