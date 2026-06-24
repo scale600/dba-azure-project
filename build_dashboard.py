@@ -116,7 +116,7 @@ nav a svg{{width:16px;height:16px;flex-shrink:0}}
 
 /* Main */
 main{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
-.topbar{{height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
+.topbar{{height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
 .topbar h1{{font-size:15px;font-weight:600}}
 .cost-notice{{border-bottom:1px solid var(--border);background:rgba(234,179,8,.08);color:#fbbf24;padding:8px 24px;font-size:12px;line-height:1.4;flex-shrink:0}}
 .badge{{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}}
@@ -221,6 +221,7 @@ tr:last-child td{{border-bottom:none}}
 
 @media(max-width:680px){{
   aside{{display:none}}
+  .topbar{{height:90px}}
   .content{{padding:16px}}
   .flow-steps{{flex-direction:column;align-items:center}}
   .flow-arrow{{transform:rotate(90deg);padding:4px 0}}
