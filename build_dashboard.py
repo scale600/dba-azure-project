@@ -228,6 +228,7 @@ tr:last-child td{{border-bottom:none}}
   .topbar h1{{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none}}
   .topbar-links{{gap:8px;order:3;margin-right:0}}
   .theme-toggle{{font-size:10px;padding:2px 8px;order:2}}
+  .theme-toggle .theme-label{{display:none}}
   .topbar .badge,.topbar .generated{{font-size:10px;order:1}}
   .content{{padding:20px 12px}}
   .mobile-nav{{display:flex;overflow-x:auto;gap:0;border-bottom:1px solid var(--border);background:var(--sidebar);padding:0 4px;-webkit-overflow-scrolling:touch;flex-shrink:0}}
