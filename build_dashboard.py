@@ -95,6 +95,11 @@ html = f"""<!DOCTYPE html>
   --text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;
   --yellow:#eab308;--red:#ef4444;--purple:#a855f7;
 }}
+[data-theme="light"]{{
+  --bg:#f8fafc;--sidebar:#ffffff;--card:#ffffff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--accent:#2563eb;--green:#16a34a;
+  --yellow:#ca8a04;--red:#dc2626;--purple:#7c3aed;
+}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}}
 
 /* Sidebar */
@@ -124,6 +129,15 @@ main{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
 .topbar-links{{display:flex;align-items:center;gap:14px;margin-left:auto;margin-right:16px}}
 .topbar-links a{{color:#64748b;display:flex;align-items:center;transition:color .15s}}
 .topbar-links a:hover{{color:#e2e8f0}}
+.theme-toggle{{background:none;border:1px solid #334155;cursor:pointer;color:#94a3b8;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:14px;transition:all .15s;letter-spacing:.03em}}
+.theme-toggle:hover{{color:#e2e8f0;border-color:#475569;background:rgba(255,255,255,.06)}}
+.theme-toggle svg{{width:13px;height:13px}}
+[data-theme="light"] .theme-toggle{{border-color:#e2e8f0;color:#64748b}}
+[data-theme="light"] .theme-toggle:hover{{color:#0f172a;border-color:#cbd5e1;background:rgba(0,0,0,.04)}}
+.theme-toggle .sun-icon{{display:none}}
+.theme-toggle .moon-icon{{display:block}}
+[data-theme="light"] .theme-toggle .sun-icon{{display:block}}
+[data-theme="light"] .theme-toggle .moon-icon{{display:none}}
 
 .content{{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:24px}}
 
@@ -274,6 +288,11 @@ tr:last-child td{{border-bottom:none}}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
       </a>
     </div>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span class="theme-label">Light</span>
+    </button>
     <div style="display:flex;align-items:center;gap:12px">
       <span class="badge disabled" id="data-badge">API DISABLED</span>
       <span class="generated" id="gen-time"></span>
@@ -529,6 +548,21 @@ tr:last-child td{{border-bottom:none}}
 </main>
 
 <script>
+// Theme toggle
+(function() {{
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+  var label = btn.querySelector('.theme-label');
+  var saved = localStorage.getItem('theme');
+  if (saved === 'light') {{ html.setAttribute('data-theme', 'light'); label.textContent = 'Dark'; }}
+  btn.addEventListener('click', function() {{
+    var isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? '' : 'light');
+    label.textContent = isLight ? 'Light' : 'Dark';
+    localStorage.setItem('theme', isLight ? 'dark' : 'light');
+  }});
+}})();
+
 {data_js}
 
 const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
