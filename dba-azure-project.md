@@ -827,6 +827,6 @@ az sql db restore \
 - [x] Write `README.md` — architecture, local setup, API docs, security notes
 - [x] Switch GitHub repository to Public — https://github.com/scale600/dba-azure-project
 - [ ] Add ASCII architecture diagram
-- [x] GitHub Actions — daily dashboard rebuild + SWA auto-deploy (`deploy-dashboard.yml`, 01:00 UTC)
+- [x] GitHub Actions — manual dashboard snapshot rebuild + SWA auto-deploy (`deploy-dashboard.yml`, cost-control mode)
 - [x] Run full test plan TC-01 ~ TC-07 ✅ (TC-08 replaced — see Phase 8)
 - [x] Final secret exposure check — git history clean, no credentials ever committed
