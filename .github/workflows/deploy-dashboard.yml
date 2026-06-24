@@ -11,6 +11,12 @@ on:
   # Snapshot regeneration queries Azure SQL. Keep this manual while cost-control
   # mode is active so the serverless database can remain paused.
   workflow_dispatch:
+    inputs:
+      refresh_snapshot:
+        description: 'Query Azure SQL and rebuild the embedded dashboard snapshot'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   build-and-deploy:
@@ -34,6 +40,7 @@ jobs:
         run: pip install pyodbc azure-identity azure-keyvault-secrets requests
 
       - name: Build dashboard snapshot
+        if: github.event_name == 'workflow_dispatch' && inputs.refresh_snapshot
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
         run: python build_dashboard.py

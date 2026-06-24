@@ -1,96 +1,4 @@
-#!/usr/bin/env python3.11
-"""Build site/index.html by querying HospitalDB and embedding data."""
-
-import os, sys, json
-from decimal import Decimal
-from datetime import date, datetime, timezone, timedelta
-
-PST = timezone(timedelta(hours=-8))
-
-sys.path.insert(0, os.path.dirname(__file__))
-
-# Load .env
-env_path = os.path.join(os.path.dirname(__file__), '.env')
-if os.path.exists(env_path):
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if '=' in line and not line.startswith('#'):
-                k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip())
-
-from api.db import query
-
-def fix(obj):
-    if isinstance(obj, Decimal): return float(obj)
-    if isinstance(obj, (date, datetime)): return obj.isoformat()
-    return obj
-
-def q(sql): return [{k: fix(v) for k, v in r.items()} for r in query(sql)]
-
-def build_data():
-    return {
-    "generated_at": datetime.now(PST).strftime("%Y-%m-%d %H:%M PST"),
-    "kpi": q("""
-        SELECT
-            COUNT(*) AS total_hospitals,
-            CAST(AVG(CAST(OverallRating AS FLOAT)) AS DECIMAL(4,2)) AS avg_rating,
-            SUM(CASE WHEN RTRIM(EmergencyServices)='Y' THEN 1 ELSE 0 END) AS with_emergency,
-            SUM(CASE WHEN OverallRating=5 THEN 1 ELSE 0 END) AS top_rated
-        FROM dbo.Hospital WHERE State IS NOT NULL
-    """)[0],
-    "metrics_count": q("SELECT COUNT(*) AS cnt FROM dbo.HospitalVisitMetrics")[0]["cnt"],
-    "rating_dist": q("""
-        SELECT OverallRating AS rating, COUNT(*) AS count
-        FROM dbo.Hospital WHERE OverallRating IS NOT NULL
-        GROUP BY OverallRating ORDER BY OverallRating
-    """),
-    "emergency_dist": q("""
-        SELECT RTRIM(EmergencyServices) AS emergency, COUNT(*) AS count
-        FROM dbo.Hospital WHERE EmergencyServices IS NOT NULL
-        GROUP BY RTRIM(EmergencyServices)
-    """),
-    "top_states": q("""
-        SELECT TOP 20 RTRIM(State) AS state, COUNT(*) AS hospitals,
-            CAST(AVG(CAST(OverallRating AS FLOAT)) AS DECIMAL(4,2)) AS avg_rating
-        FROM dbo.Hospital WHERE State IS NOT NULL
-        GROUP BY RTRIM(State) ORDER BY hospitals DESC
-    """),
-    "hospital_types": q("""
-        SELECT HospitalType AS type, COUNT(*) AS count
-        FROM dbo.Hospital WHERE HospitalType IS NOT NULL
-        GROUP BY HospitalType ORDER BY count DESC
-    """),
-    "national_comparison": q("""
-        SELECT ComparedToNational AS result, COUNT(*) AS count
-        FROM dbo.HospitalVisitMetrics WHERE ComparedToNational IS NOT NULL
-        GROUP BY ComparedToNational ORDER BY count DESC
-    """),
-    "etl_log": q("""
-        SELECT TOP 8
-            LogID           AS log_id,
-            Status          AS status,
-            HospitalsLoaded AS hospitals_loaded,
-            MetricsLoaded   AS metrics_loaded,
-            DATEDIFF(SECOND, RunStart, RunEnd) AS duration_sec,
-            CONVERT(VARCHAR(16), DATEADD(HOUR, -8, RunStart), 120) AS run_start
-        FROM dbo.ETL_Log ORDER BY RunStart DESC
-    """),
-    }
-
-
-snapshot_path = os.getenv("DASHBOARD_DATA_FILE")
-if snapshot_path:
-    print(f"Building from cached snapshot: {snapshot_path}")
-    with open(snapshot_path) as f:
-        data = json.load(f)
-else:
-    print("Querying HospitalDB...")
-    data = build_data()
-
-data_js = f"const DB_DATA = {json.dumps(data, indent=2)};"
-
-html = f"""<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -98,198 +6,198 @@ html = f"""<!DOCTYPE html>
 <title>Live Dashboard — DBA Azure Project</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-:root{{
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
   --bg:#0f172a;--sidebar:#1e293b;--card:#1e293b;--border:#334155;
   --text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;
   --yellow:#eab308;--red:#ef4444;--purple:#a855f7;
-}}
-[data-theme="light"]{{
+}
+[data-theme="light"]{
   --bg:#f8fafc;--sidebar:#ffffff;--card:#ffffff;--border:#e2e8f0;
   --text:#0f172a;--muted:#64748b;--accent:#2563eb;--green:#16a34a;
   --yellow:#ca8a04;--red:#dc2626;--purple:#7c3aed;
-}}
-body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}}
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
 
 /* Sidebar */
-aside{{width:220px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}}
-.sidebar-logo{{padding:24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}}
-.sidebar-logo svg{{color:var(--accent)}}
-.sidebar-logo span{{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}}
-nav{{padding:12px 0;flex:1}}
-nav a{{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;border-right:2px solid transparent}}
-nav a:hover{{background:rgba(255,255,255,.05);color:var(--text)}}
-nav a.active{{background:rgba(59,130,246,.15);color:var(--accent);border-right-color:var(--accent)}}
-nav a svg{{width:16px;height:16px;flex-shrink:0}}
-.sidebar-footer{{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}}
+aside{width:220px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-logo svg{color:var(--accent)}
+.sidebar-logo span{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}
+nav{padding:12px 0;flex:1}
+nav a{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s;border-right:2px solid transparent}
+nav a:hover{background:rgba(255,255,255,.05);color:var(--text)}
+nav a.active{background:rgba(59,130,246,.15);color:var(--accent);border-right-color:var(--accent)}
+nav a svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
 
 /* Main */
-main{{flex:1;display:flex;flex-direction:column;overflow:hidden}}
-.topbar{{height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}}
-.topbar h1{{font-size:15px;font-weight:600}}
-.cost-notice{{border-bottom:1px solid var(--border);background:rgba(234,179,8,.08);color:#fbbf24;padding:8px 24px;font-size:12px;line-height:1.4;flex-shrink:0}}
-.badge{{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}}
-.badge.live{{background:rgba(34,197,94,.15);color:#4ade80}}
-.badge.live::before{{content:'';width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}}
-@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.4}}}}
-.badge.snap{{background:rgba(59,130,246,.15);color:#60a5fa}}
-.badge.disabled{{background:rgba(148,163,184,.12);color:#94a3b8}}
-.generated{{font-size:11px;color:var(--muted)}}
-.topbar-links{{display:flex;align-items:center;gap:10px;margin-left:auto}}
-.topbar-links a{{color:#64748b;display:flex;align-items:center;transition:color .15s}}
-.topbar-links a:hover{{color:#e2e8f0}}
-.manual-refresh{{border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--muted)!important;font-size:11px;font-weight:600;gap:5px}}
-.manual-refresh:hover{{color:#60a5fa!important;border-color:#3b82f6;background:rgba(59,130,246,.12)}}
-.manual-refresh svg{{width:14px;height:14px}}
-.theme-toggle{{background:none;border:1px solid #334155;cursor:pointer;color:#94a3b8;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:14px;transition:all .15s;letter-spacing:.03em}}
-.theme-toggle:hover{{color:#e2e8f0;border-color:#475569;background:rgba(255,255,255,.06)}}
-.theme-toggle svg{{width:13px;height:13px}}
-[data-theme="light"] .theme-toggle{{border-color:#e2e8f0;color:#64748b}}
-[data-theme="light"] .theme-toggle:hover{{color:#0f172a;border-color:#cbd5e1;background:rgba(0,0,0,.04)}}
-.theme-toggle .sun-icon{{display:none}}
-.theme-toggle .moon-icon{{display:block}}
-[data-theme="light"] .theme-toggle .sun-icon{{display:block}}
-[data-theme="light"] .theme-toggle .moon-icon{{display:none}}
+main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--sidebar);flex-shrink:0}
+.topbar h1{font-size:15px;font-weight:600}
+.cost-notice{border-bottom:1px solid var(--border);background:rgba(234,179,8,.08);color:#fbbf24;padding:8px 24px;font-size:12px;line-height:1.4;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+.badge.live{background:rgba(34,197,94,.15);color:#4ade80}
+.badge.live::before{content:'';width:6px;height:6px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.badge.snap{background:rgba(59,130,246,.15);color:#60a5fa}
+.badge.disabled{background:rgba(148,163,184,.12);color:#94a3b8}
+.generated{font-size:11px;color:var(--muted)}
+.topbar-links{display:flex;align-items:center;gap:10px;margin-left:auto}
+.topbar-links a{color:#64748b;display:flex;align-items:center;transition:color .15s}
+.topbar-links a:hover{color:#e2e8f0}
+.manual-refresh{border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--muted)!important;font-size:11px;font-weight:600;gap:5px}
+.manual-refresh:hover{color:#60a5fa!important;border-color:#3b82f6;background:rgba(59,130,246,.12)}
+.manual-refresh svg{width:14px;height:14px}
+.theme-toggle{background:none;border:1px solid #334155;cursor:pointer;color:#94a3b8;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:14px;transition:all .15s;letter-spacing:.03em}
+.theme-toggle:hover{color:#e2e8f0;border-color:#475569;background:rgba(255,255,255,.06)}
+.theme-toggle svg{width:13px;height:13px}
+[data-theme="light"] .theme-toggle{border-color:#e2e8f0;color:#64748b}
+[data-theme="light"] .theme-toggle:hover{color:#0f172a;border-color:#cbd5e1;background:rgba(0,0,0,.04)}
+.theme-toggle .sun-icon{display:none}
+.theme-toggle .moon-icon{display:block}
+[data-theme="light"] .theme-toggle .sun-icon{display:block}
+[data-theme="light"] .theme-toggle .moon-icon{display:none}
 
-.content{{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:24px}}
+.content{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:24px}
 
 /* KPI cards */
-.kpi-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}}
-.kpi{{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}}
-.kpi-header{{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}}
-.kpi-icon{{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center}}
-.kpi-icon.blue{{background:rgba(59,130,246,.15)}}
-.kpi-icon.green{{background:rgba(34,197,94,.15)}}
-.kpi-icon.purple{{background:rgba(168,85,247,.15)}}
-.kpi-icon.yellow{{background:rgba(234,179,8,.15)}}
-.kpi-value{{font-size:28px;font-weight:700;line-height:1}}
-.kpi-label{{font-size:13px;color:var(--muted);margin-top:4px}}
-.kpi-sub{{font-size:11px;color:var(--muted);margin-top:6px}}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.kpi-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.kpi-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.kpi-icon.blue{background:rgba(59,130,246,.15)}
+.kpi-icon.green{background:rgba(34,197,94,.15)}
+.kpi-icon.purple{background:rgba(168,85,247,.15)}
+.kpi-icon.yellow{background:rgba(234,179,8,.15)}
+.kpi-value{font-size:28px;font-weight:700;line-height:1}
+.kpi-label{font-size:13px;color:var(--muted);margin-top:4px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px}
 
 /* Charts grid */
-.charts-grid{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
-.charts-grid.wide{{grid-template-columns:2fr 1fr}}
-@media(max-width:900px){{.charts-grid,.charts-grid.wide{{grid-template-columns:1fr}}}}
-.card{{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}}
-.card-title{{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--text)}}
-.chart-wrap{{position:relative;height:220px}}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.charts-grid.wide{grid-template-columns:2fr 1fr}
+@media(max-width:900px){.charts-grid,.charts-grid.wide{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-title{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--text)}
+.chart-wrap{position:relative;height:220px}
 
 /* Table */
-table{{width:100%;border-collapse:collapse;font-size:12px}}
-th{{text-align:left;padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500}}
-td{{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04)}}
-tr:last-child td{{border-bottom:none}}
-.status-ok{{color:#4ade80;font-weight:600}}
-.status-fail{{color:#f87171;font-weight:600}}
-.status-run{{color:#fbbf24;font-weight:600}}
-.btn-export{{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);transition:all .15s}}
-.btn-export:hover{{background:rgba(59,130,246,.15);color:#60a5fa;border-color:#3b82f6}}
-.btn-export:disabled{{opacity:.4;cursor:not-allowed}}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500}
+td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:last-child td{border-bottom:none}
+.status-ok{color:#4ade80;font-weight:600}
+.status-fail{color:#f87171;font-weight:600}
+.status-run{color:#fbbf24;font-weight:600}
+.btn-export{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);transition:all .15s}
+.btn-export:hover{background:rgba(59,130,246,.15);color:#60a5fa;border-color:#3b82f6}
+.btn-export:disabled{opacity:.4;cursor:not-allowed}
 
 /* Data Export section */
-.export-grid{{display:flex;flex-direction:column;gap:12px}}
-.export-item{{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);transition:background .15s}}
-.export-item:hover{{background:rgba(255,255,255,.04)}}
-.export-icon{{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}}
-.export-info{{flex:1;min-width:0}}
-.export-name{{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}}
-.export-desc{{font-size:12px;color:var(--muted);margin-bottom:4px}}
-.export-cols{{font-size:10px;color:#475569;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.btn-export-lg{{flex-shrink:0;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(59,130,246,.1);color:#60a5fa;transition:all .15s;white-space:nowrap}}
-.btn-export-lg:hover{{background:rgba(59,130,246,.25);border-color:#3b82f6}}
-.btn-export-lg:disabled{{opacity:.4;cursor:not-allowed}}
+.export-grid{display:flex;flex-direction:column;gap:12px}
+.export-item{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);transition:background .15s}
+.export-item:hover{background:rgba(255,255,255,.04)}
+.export-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.export-info{flex:1;min-width:0}
+.export-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.export-desc{font-size:12px;color:var(--muted);margin-bottom:4px}
+.export-cols{font-size:10px;color:#475569;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-export-lg{flex-shrink:0;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:rgba(59,130,246,.1);color:#60a5fa;transition:all .15s;white-space:nowrap}
+.btn-export-lg:hover{background:rgba(59,130,246,.25);border-color:#3b82f6}
+.btn-export-lg:disabled{opacity:.4;cursor:not-allowed}
 
 /* About section */
-.about-grid{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}
-@media(max-width:900px){{.about-grid{{grid-template-columns:1fr}}}}
-.about-desc{{font-size:14px;line-height:1.7;color:var(--muted)}}
-.about-desc p{{margin-bottom:12px}}
-.about-note{{font-size:12px;color:#64748b;border-left:2px solid var(--border);padding-left:12px;margin-top:8px}}
-.about-label{{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}}
-.tech-badges{{display:flex;flex-wrap:wrap;gap:6px}}
-.tech-badge{{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}}
-.tech-badge.python{{background:rgba(234,179,8,.12);color:#fbbf24}}
-.tech-badge.azure{{background:rgba(59,130,246,.12);color:#60a5fa}}
-.tech-badge.misc{{background:rgba(148,163,184,.1);color:#94a3b8}}
-.data-sources{{display:flex;flex-direction:column;gap:6px}}
-.data-src{{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--border)}}
-.data-src-name{{font-size:12px;font-weight:600;color:var(--text)}}
-.data-src-detail{{font-size:11px;color:var(--muted)}}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:900px){.about-grid{grid-template-columns:1fr}}
+.about-desc{font-size:14px;line-height:1.7;color:var(--muted)}
+.about-desc p{margin-bottom:12px}
+.about-note{font-size:12px;color:#64748b;border-left:2px solid var(--border);padding-left:12px;margin-top:8px}
+.about-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px}
+.tech-badges{display:flex;flex-wrap:wrap;gap:6px}
+.tech-badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
+.tech-badge.python{background:rgba(234,179,8,.12);color:#fbbf24}
+.tech-badge.azure{background:rgba(59,130,246,.12);color:#60a5fa}
+.tech-badge.misc{background:rgba(148,163,184,.1);color:#94a3b8}
+.data-sources{display:flex;flex-direction:column;gap:6px}
+.data-src{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--border)}
+.data-src-name{font-size:12px;font-weight:600;color:var(--text)}
+.data-src-detail{font-size:11px;color:var(--muted)}
 
 /* How it works section */
-.flow-steps{{display:flex;align-items:flex-start;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:20px}}
-.flow-step{{display:flex;flex-direction:column;align-items:center;text-align:center;width:150px;gap:8px}}
-.flow-icon{{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center}}
-.flow-title{{font-size:12px;font-weight:700;color:var(--text)}}
-.flow-desc{{font-size:11px;color:var(--muted);line-height:1.4}}
-.flow-arrow{{font-size:20px;color:var(--border);padding:10px 8px 0;align-self:flex-start;margin-top:10px}}
-.flow-details{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;border-top:1px solid var(--border);padding-top:16px}}
-.flow-detail{{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.02)}}
-.flow-detail-label{{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}}
-.flow-detail-value{{font-size:12px;color:var(--text)}}
+.flow-steps{display:flex;align-items:flex-start;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:20px}
+.flow-step{display:flex;flex-direction:column;align-items:center;text-align:center;width:150px;gap:8px}
+.flow-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.flow-title{font-size:12px;font-weight:700;color:var(--text)}
+.flow-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.flow-arrow{font-size:20px;color:var(--border);padding:10px 8px 0;align-self:flex-start;margin-top:10px}
+.flow-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;border-top:1px solid var(--border);padding-top:16px}
+.flow-detail{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.02)}
+.flow-detail-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.flow-detail-value{font-size:12px;color:var(--text)}
 
 /* Nav separator */
-.nav-sep{{height:1px;background:var(--border);margin:6px 16px}}
+.nav-sep{height:1px;background:var(--border);margin:6px 16px}
 
 /* Mobile section nav (hidden on desktop) */
-.mobile-nav{{display:none}}
+.mobile-nav{display:none}
 
 /* Hamburger button */
-.hamburger{{display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;flex-shrink:0;margin-right:4px}}
-.hamburger:hover{{color:var(--text)}}
-.hamburger svg{{width:22px;height:22px}}
+.hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;flex-shrink:0;margin-right:4px}
+.hamburger:hover{color:var(--text)}
+.hamburger svg{width:22px;height:22px}
 
 /* Drawer */
-.drawer-overlay{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}}
-.drawer-overlay.open{{display:block}}
-.drawer{{position:fixed;top:0;left:0;bottom:0;width:260px;background:var(--sidebar);z-index:21;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}}
-.drawer.open{{transform:translateX(0)}}
-.drawer .drawer-logo{{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}}
-.drawer .drawer-logo svg{{color:var(--accent)}}
-.drawer .drawer-logo span{{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}}
-.drawer nav{{flex:1;padding:8px 0}}
-.drawer nav a{{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);text-decoration:none;border-right:2px solid transparent;transition:all .15s}}
-.drawer nav a.active{{color:var(--accent);border-right-color:var(--accent);background:rgba(59,130,246,.15)}}
-.drawer nav a:hover{{color:var(--text);background:rgba(255,255,255,.05)}}
-.drawer nav a svg{{width:18px;height:18px;flex-shrink:0}}
-.drawer .drawer-footer{{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);flex-shrink:0}}
-.drawer .nav-sep{{height:1px;background:var(--border);margin:6px 0}}
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:var(--sidebar);z-index:21;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.drawer.open{transform:translateX(0)}
+.drawer .drawer-logo{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.drawer .drawer-logo svg{color:var(--accent)}
+.drawer .drawer-logo span{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}
+.drawer nav{flex:1;padding:8px 0}
+.drawer nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);text-decoration:none;border-right:2px solid transparent;transition:all .15s}
+.drawer nav a.active{color:var(--accent);border-right-color:var(--accent);background:rgba(59,130,246,.15)}
+.drawer nav a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.drawer nav a svg{width:18px;height:18px;flex-shrink:0}
+.drawer .drawer-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);flex-shrink:0}
+.drawer .nav-sep{height:1px;background:var(--border);margin:6px 0}
 
-@media(max-width:680px){{
-  aside{{display:none}}
-  .topbar{{height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px}}
-  .topbar h1{{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}}
-  .topbar-links{{gap:8px;order:2}}
-  .manual-refresh{{padding:2px;border:none}}
-  .manual-refresh .refresh-label{{display:none}}
-  .theme-toggle{{background:none;border:none;padding:0;color:#64748b}}
-  .theme-toggle:hover{{color:#e2e8f0;background:none}}
-  .theme-toggle .theme-label{{display:none}}
-  .theme-toggle svg{{width:16px;height:16px}}
-  .topbar .badge,.topbar .generated{{font-size:10px;order:1}}
-  .content{{padding:20px 12px}}
-  .hamburger{{display:block}}
-  .mobile-nav{{display:none}}
-  .mobile-nav a{{flex-shrink:0;padding:8px 10px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}}
-  .mobile-nav a.active{{border-bottom-color:var(--accent);color:var(--accent)}}
-  .mobile-nav a:hover{{color:var(--text)}}
-  .kpi{{padding:14px}}
-  .kpi-value{{font-size:24px}}
-  .kpi-label{{font-size:12px}}
-  .card-title{{font-size:12px}}
-  .chart-wrap{{height:180px}}
-  .export-cols{{display:none}}
-  .export-item{{padding:12px}}
-  .export-name{{font-size:13px}}
-  .export-desc{{font-size:11px}}
-  .about-grid{{grid-template-columns:1fr;gap:16px}}
-  .about-desc{{font-size:13px}}
-  table{{font-size:11px}}
-  th,td{{padding:6px 8px}}
-  .flow-steps{{flex-direction:column;align-items:center}}
-  .flow-arrow{{transform:rotate(90deg);padding:4px 0}}
-  .btn-export-lg{{padding:5px 12px;font-size:11px}}
-}}
+@media(max-width:680px){
+  aside{display:none}
+  .topbar{height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px}
+  .topbar h1{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}
+  .topbar-links{gap:8px;order:2}
+  .manual-refresh{padding:2px;border:none}
+  .manual-refresh .refresh-label{display:none}
+  .theme-toggle{background:none;border:none;padding:0;color:#64748b}
+  .theme-toggle:hover{color:#e2e8f0;background:none}
+  .theme-toggle .theme-label{display:none}
+  .theme-toggle svg{width:16px;height:16px}
+  .topbar .badge,.topbar .generated{font-size:10px;order:1}
+  .content{padding:20px 12px}
+  .hamburger{display:block}
+  .mobile-nav{display:none}
+  .mobile-nav a{flex-shrink:0;padding:8px 10px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+  .mobile-nav a.active{border-bottom-color:var(--accent);color:var(--accent)}
+  .mobile-nav a:hover{color:var(--text)}
+  .kpi{padding:14px}
+  .kpi-value{font-size:24px}
+  .kpi-label{font-size:12px}
+  .card-title{font-size:12px}
+  .chart-wrap{height:180px}
+  .export-cols{display:none}
+  .export-item{padding:12px}
+  .export-name{font-size:13px}
+  .export-desc{font-size:11px}
+  .about-grid{grid-template-columns:1fr;gap:16px}
+  .about-desc{font-size:13px}
+  table{font-size:11px}
+  th,td{padding:6px 8px}
+  .flow-steps{flex-direction:column;align-items:center}
+  .flow-arrow{transform:rotate(90deg);padding:4px 0}
+  .btn-export-lg{padding:5px 12px;font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -677,155 +585,428 @@ tr:last-child td{{border-bottom:none}}
 
 <script>
 // Theme toggle
-(function() {{
+(function() {
   var html = document.documentElement;
   var btn = document.getElementById('theme-toggle');
   var label = btn.querySelector('.theme-label');
   var saved = localStorage.getItem('theme');
-  if (saved === 'light') {{ html.setAttribute('data-theme', 'light'); label.textContent = 'Dark'; }}
-  btn.addEventListener('click', function() {{
+  if (saved === 'light') { html.setAttribute('data-theme', 'light'); label.textContent = 'Dark'; }
+  btn.addEventListener('click', function() {
     var isLight = html.getAttribute('data-theme') === 'light';
     html.setAttribute('data-theme', isLight ? '' : 'light');
     label.textContent = isLight ? 'Light' : 'Dark';
     localStorage.setItem('theme', isLight ? 'dark' : 'light');
-  }});
-}})();
+  });
+})();
 
 // Drawer toggle
-(function() {{
+(function() {
   var btn = document.getElementById('hamburger-btn');
   var drawer = document.getElementById('drawer');
   var overlay = document.getElementById('drawer-overlay');
-  function open() {{ drawer.classList.add('open'); overlay.classList.add('open'); }}
-  function close() {{ drawer.classList.remove('open'); overlay.classList.remove('open'); }}
-  btn.addEventListener('click', function(e) {{ e.stopPropagation(); open(); }});
+  function open() { drawer.classList.add('open'); overlay.classList.add('open'); }
+  function close() { drawer.classList.remove('open'); overlay.classList.remove('open'); }
+  btn.addEventListener('click', function(e) { e.stopPropagation(); open(); });
   overlay.addEventListener('click', close);
-  drawer.querySelectorAll('nav a').forEach(function(a) {{
-    a.addEventListener('click', function() {{ setTimeout(close, 150); }});
-  }});
-}})();
+  drawer.querySelectorAll('nav a').forEach(function(a) {
+    a.addEventListener('click', function() { setTimeout(close, 150); });
+  });
+})();
 
-{data_js}
+const DB_DATA = {
+  "generated_at": "2026-06-11T22:40:33.850642Z",
+  "kpi": {
+    "total_hospitals": 5433,
+    "avg_rating": 3.21,
+    "with_emergency": 4499,
+    "top_rated": 384
+  },
+  "metrics_count": 67088,
+  "rating_dist": [
+    {
+      "rating": 1,
+      "count": 199
+    },
+    {
+      "rating": 2,
+      "count": 662
+    },
+    {
+      "rating": 3,
+      "count": 987
+    },
+    {
+      "rating": 4,
+      "count": 951
+    },
+    {
+      "rating": 5,
+      "count": 384
+    }
+  ],
+  "emergency_dist": [
+    {
+      "emergency": "N",
+      "count": 934
+    },
+    {
+      "emergency": "Y",
+      "count": 4499
+    }
+  ],
+  "top_states": [
+    {
+      "state": "TX",
+      "hospitals": 468,
+      "avg_rating": 3.38
+    },
+    {
+      "state": "CA",
+      "hospitals": 379,
+      "avg_rating": 3.1
+    },
+    {
+      "state": "FL",
+      "hospitals": 221,
+      "avg_rating": 3.07
+    },
+    {
+      "state": "OH",
+      "hospitals": 196,
+      "avg_rating": 3.58
+    },
+    {
+      "state": "IL",
+      "hospitals": 194,
+      "avg_rating": 3.03
+    },
+    {
+      "state": "NY",
+      "hospitals": 191,
+      "avg_rating": 2.77
+    },
+    {
+      "state": "PA",
+      "hospitals": 187,
+      "avg_rating": 3.48
+    },
+    {
+      "state": "LA",
+      "hospitals": 161,
+      "avg_rating": 2.81
+    },
+    {
+      "state": "IN",
+      "hospitals": 151,
+      "avg_rating": 3.36
+    },
+    {
+      "state": "GA",
+      "hospitals": 149,
+      "avg_rating": 2.94
+    },
+    {
+      "state": "MI",
+      "hospitals": 148,
+      "avg_rating": 3.09
+    },
+    {
+      "state": "WI",
+      "hospitals": 141,
+      "avg_rating": 3.78
+    },
+    {
+      "state": "KS",
+      "hospitals": 138,
+      "avg_rating": 3.18
+    },
+    {
+      "state": "MN",
+      "hospitals": 136,
+      "avg_rating": 3.77
+    },
+    {
+      "state": "OK",
+      "hospitals": 135,
+      "avg_rating": 3.29
+    },
+    {
+      "state": "TN",
+      "hospitals": 122,
+      "avg_rating": 3.08
+    },
+    {
+      "state": "MO",
+      "hospitals": 121,
+      "avg_rating": 3.14
+    },
+    {
+      "state": "NC",
+      "hospitals": 120,
+      "avg_rating": 3.3
+    },
+    {
+      "state": "IA",
+      "hospitals": 118,
+      "avg_rating": 3.24
+    },
+    {
+      "state": "MS",
+      "hospitals": 108,
+      "avg_rating": 2.33
+    }
+  ],
+  "hospital_types": [
+    {
+      "type": "Acute Care Hospitals",
+      "count": 3115
+    },
+    {
+      "type": "Critical Access Hospitals",
+      "count": 1378
+    },
+    {
+      "type": "Psychiatric",
+      "count": 635
+    },
+    {
+      "type": "Acute Care - Veterans Administration",
+      "count": 132
+    },
+    {
+      "type": "Childrens",
+      "count": 94
+    },
+    {
+      "type": "Rural Emergency Hospital",
+      "count": 41
+    },
+    {
+      "type": "Acute Care - Department of Defense",
+      "count": 32
+    },
+    {
+      "type": "Long-term",
+      "count": 5
+    }
+  ],
+  "national_comparison": [
+    {
+      "result": "Not Available",
+      "count": 15988
+    }
+  ],
+  "top_measures": [
+    {
+      "MeasureID": "Hybrid_HWR",
+      "hospital_count": 4211,
+      "avg_score": 14.98
+    },
+    {
+      "MeasureID": "EDAC_30_PN",
+      "hospital_count": 3631,
+      "avg_score": 6.18
+    },
+    {
+      "MeasureID": "READM_30_PN",
+      "hospital_count": 3631,
+      "avg_score": 15.99
+    },
+    {
+      "MeasureID": "EDAC_30_HF",
+      "hospital_count": 3151,
+      "avg_score": 5.16
+    },
+    {
+      "MeasureID": "READM_30_HF",
+      "hospital_count": 3151,
+      "avg_score": 19.71
+    },
+    {
+      "MeasureID": "OP_32",
+      "hospital_count": 3145,
+      "avg_score": 13.0
+    },
+    {
+      "MeasureID": "OP_36",
+      "hospital_count": 2721,
+      "avg_score": 1.01
+    },
+    {
+      "MeasureID": "READM_30_COPD",
+      "hospital_count": 2696,
+      "avg_score": 18.23
+    },
+    {
+      "MeasureID": "READM_30_AMI",
+      "hospital_count": 1823,
+      "avg_score": 13.63
+    },
+    {
+      "MeasureID": "READM_30_HIP_KNEE",
+      "hospital_count": 1625,
+      "avg_score": 4.86
+    }
+  ],
+  "etl_log": [
+    {
+      "LogID": 4,
+      "Status": "SUCCESS",
+      "HospitalsLoaded": 0,
+      "MetricsLoaded": 67088,
+      "duration_sec": 43,
+      "RunStart": "2026-06-11T22:04:11.903333",
+      "RunEnd": "2026-06-11T22:04:54.173333"
+    },
+    {
+      "LogID": 3,
+      "Status": "FAILED",
+      "HospitalsLoaded": 0,
+      "MetricsLoaded": 0,
+      "duration_sec": 12,
+      "RunStart": "2026-06-11T22:03:04.316666",
+      "RunEnd": "2026-06-11T22:03:16.580000"
+    },
+    {
+      "LogID": 2,
+      "Status": "FAILED",
+      "HospitalsLoaded": 5432,
+      "MetricsLoaded": 0,
+      "duration_sec": 132,
+      "RunStart": "2026-06-11T21:59:12.603333",
+      "RunEnd": "2026-06-11T22:01:24.060000"
+    },
+    {
+      "LogID": 1,
+      "Status": "SUCCESS",
+      "HospitalsLoaded": 1,
+      "MetricsLoaded": 0,
+      "duration_sec": null,
+      "RunStart": "2026-06-11T21:52:12.010000",
+      "RunEnd": null
+    }
+  ]
+};
 
 const API = 'https://func-dba-xvel6ncdvwsre.azurewebsites.net/api';
 const API_DISABLED = true;
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
-function downloadCSV(filename, headers, rows) {{
-  const escape = v => {{ const s = String(v ?? ''); return (s.includes(',') || s.includes('"')) ? '"' + s.replace(/"/g,'""') + '"' : s; }};
+function downloadCSV(filename, headers, rows) {
+  const escape = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"')) ? '"' + s.replace(/"/g,'""') + '"' : s; };
   const lines = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))];
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\\n')], {{type:'text/csv'}}));
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv'}));
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
-}}
+}
 
-function exportStates() {{
-  const src = window._liveStates || DB_DATA.top_states.map(d => ({{
+function exportStates() {
+  const src = window._liveStates || DB_DATA.top_states.map(d => ({
     state: d.state, total_hospitals: d.hospitals, avg_rating: d.avg_rating,
     with_emergency: '', top_rated_count: ''
-  }}));
+  }));
   downloadCSV('hospital_states.csv', ['state','total_hospitals','avg_rating','with_emergency','top_rated_count'], src);
-}}
+}
 
-function exportETL() {{
+function exportETL() {
   downloadCSV('etl_log.csv', ['log_id','run_start','status','hospitals_loaded','metrics_loaded','duration_sec'], DB_DATA.etl_log);
-}}
+}
 
-async function exportAllHospitals() {{
+async function exportAllHospitals() {
   const btn = document.getElementById('btn-all-hospitals');
   btn.disabled = true; btn.textContent = '⏳ Fetching…';
-  try {{
+  try {
     let all = [], offset = 0, total = Infinity;
-    while (all.length < total) {{
-      const res = await fetch(`${{API}}/hospitals?limit=500&offset=${{offset}}`, {{signal: AbortSignal.timeout(30000)}});
+    while (all.length < total) {
+      const res = await fetch(`${API}/hospitals?limit=500&offset=${offset}`, {signal: AbortSignal.timeout(30000)});
       if (!res.ok) throw new Error();
       const d = await res.json();
       total = d.total;
       all = all.concat(d.data);
       offset += d.data.length;
-      btn.textContent = `⏳ ${{all.length}}/${{total}}`;
+      btn.textContent = `⏳ ${all.length}/${total}`;
       if (d.data.length === 0) break;
-    }}
+    }
     downloadCSV('hospitals_all.csv',
       ['FacilityID','FacilityName','Address','City','State','ZipCode','Phone',
        'HospitalType','EmergencyServices','OverallRating','Latitude','Longitude'],
       all);
-    btn.textContent = `✓ ${{all.length}} rows`;
-    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 3000);
-  }} catch (_) {{
+    btn.textContent = `✓ ${all.length} rows`;
+    setTimeout(() => { btn.disabled = false; btn.textContent = '↓ All Hospitals'; }, 3000);
+  } catch (_) {
     btn.textContent = '✗ Failed';
-    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ All Hospitals'; }}, 2000);
-  }}
-}}
+    setTimeout(() => { btn.disabled = false; btn.textContent = '↓ All Hospitals'; }, 2000);
+  }
+}
 
-async function exportQualityMetrics() {{
+async function exportQualityMetrics() {
   const btn = document.getElementById('btn-quality-metrics');
   btn.disabled = true; btn.textContent = '⏳ Fetching…';
-  try {{
+  try {
     let all = [], offset = 0, total = Infinity;
-    while (all.length < total) {{
-      const res = await fetch(`${{API}}/metrics/export?limit=2000&offset=${{offset}}`, {{signal: AbortSignal.timeout(60000)}});
+    while (all.length < total) {
+      const res = await fetch(`${API}/metrics/export?limit=2000&offset=${offset}`, {signal: AbortSignal.timeout(60000)});
       if (!res.ok) throw new Error('API error');
       const d = await res.json();
       total = d.total;
       all = all.concat(d.data);
       offset += d.data.length;
-      btn.textContent = `⏳ ${{all.length.toLocaleString()}}/${{total.toLocaleString()}}`;
+      btn.textContent = `⏳ ${all.length.toLocaleString()}/${total.toLocaleString()}`;
       if (d.data.length === 0) break;
-    }}
+    }
     downloadCSV('quality_metrics.csv',
       ['FacilityID','FacilityName','State','City','HospitalType','EmergencyServices',
        'OverallRating','MeasureID','MeasureName','Score','ComparedToNational',
        'NumberOfPatients','PeriodStart','PeriodEnd'],
       all);
-    btn.textContent = `✓ ${{all.length.toLocaleString()}} rows`;
-    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }}, 3000);
-  }} catch (_) {{
+    btn.textContent = `✓ ${all.length.toLocaleString()} rows`;
+    setTimeout(() => { btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }, 3000);
+  } catch (_) {
     btn.textContent = '✗ Failed';
-    setTimeout(() => {{ btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }}, 2000);
-  }}
-}}
+    setTimeout(() => { btn.disabled = false; btn.textContent = '↓ Quality Metrics'; }, 2000);
+  }
+}
 
-function setBadge(live) {{
+function setBadge(live) {
   const el = document.getElementById('data-badge');
-  if (API_DISABLED) {{
+  if (API_DISABLED) {
     el.textContent = 'API DISABLED';
     el.className = 'badge disabled';
     return;
-  }}
-  if (live) {{
+  }
+  if (live) {
     el.textContent = '● LIVE';
     el.className = 'badge live';
-  }} else {{
+  } else {
     el.textContent = 'SNAPSHOT';
     el.className = 'badge snap';
-  }}
-}}
+  }
+}
 
-function renderKPIs(kpi, metricsCount) {{
+function renderKPIs(kpi, metricsCount) {
   document.getElementById('kpi-hospitals').textContent = kpi.total_hospitals.toLocaleString();
   document.getElementById('kpi-rating').textContent = (+kpi.avg_rating||0).toFixed(2) + ' ★';
   document.getElementById('kpi-emergency').textContent = kpi.with_emergency.toLocaleString();
   document.getElementById('kpi-metrics').textContent = metricsCount.toLocaleString();
-}}
+}
 
-function renderETL(rows) {{
+function renderETL(rows) {
   const tbody = document.getElementById('etl-body');
   tbody.innerHTML = '';
-  rows.forEach(r => {{
+  rows.forEach(r => {
     const cls = r.status === 'SUCCESS' ? 'status-ok' : r.status === 'FAILED' ? 'status-fail' : 'status-run';
     tbody.innerHTML += `<tr>
-      <td>#${{r.log_id}}</td>
-      <td>${{r.run_start||'—'}}</td>
-      <td class="${{cls}}">${{r.status}}</td>
-      <td>${{(r.hospitals_loaded||0).toLocaleString()}}</td>
-      <td>${{(r.metrics_loaded||0).toLocaleString()}}</td>
-      <td>${{r.duration_sec != null ? r.duration_sec + 's' : '—'}}</td>
+      <td>#${r.log_id}</td>
+      <td>${r.run_start||'—'}</td>
+      <td class="${cls}">${r.status}</td>
+      <td>${(r.hospitals_loaded||0).toLocaleString()}</td>
+      <td>${(r.metrics_loaded||0).toLocaleString()}</td>
+      <td>${r.duration_sec != null ? r.duration_sec + 's' : '—'}</td>
     </tr>`;
-  }});
-}}
+  });
+}
 
 // ── Step 1: Render snapshot immediately ──────────────────────────────────────
 renderKPIs(DB_DATA.kpi, DB_DATA.metrics_count);
@@ -835,78 +1016,78 @@ renderETL(DB_DATA.etl_log);
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#334155';
 
-const chartStates = new Chart(document.getElementById('chartStates'), {{
+const chartStates = new Chart(document.getElementById('chartStates'), {
   type: 'bar',
-  data: {{
+  data: {
     labels: DB_DATA.top_states.map(d => d.state),
-    datasets: [{{ label: 'Hospitals', data: DB_DATA.top_states.map(d => d.hospitals), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 }}]
-  }},
-  options: {{
+    datasets: [{ label: 'Hospitals', data: DB_DATA.top_states.map(d => d.hospitals), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 }]
+  },
+  options: {
     responsive: true, maintainAspectRatio: false,
-    plugins: {{ legend: {{ display: false }} }},
-    scales: {{ x: {{ grid: {{ display: false }}, ticks: {{ font: {{ size: 10 }} }} }}, y: {{ grid: {{ color: '#1e293b' }}, beginAtZero: true }} }}
-  }}
-}});
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: '#1e293b' }, beginAtZero: true } }
+  }
+});
 
 const rColors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6'];
-new Chart(document.getElementById('chartRating'), {{
+new Chart(document.getElementById('chartRating'), {
   type: 'doughnut',
-  data: {{ labels: DB_DATA.rating_dist.map(d => d.rating + ' Star'), datasets: [{{ data: DB_DATA.rating_dist.map(d => d.count), backgroundColor: rColors, borderWidth: 2, borderColor: '#1e293b' }}] }},
-  options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ font: {{ size: 11 }}, padding: 10 }} }} }} }}
-}});
+  data: { labels: DB_DATA.rating_dist.map(d => d.rating + ' Star'), datasets: [{ data: DB_DATA.rating_dist.map(d => d.count), backgroundColor: rColors, borderWidth: 2, borderColor: '#1e293b' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } } } }
+});
 
 const typeColors = ['#3b82f6','#22c55e','#a855f7','#f97316','#14b8a6','#f43f5e','#84cc16'];
-new Chart(document.getElementById('chartTypes'), {{
+new Chart(document.getElementById('chartTypes'), {
   type: 'bar',
-  data: {{
+  data: {
     labels: DB_DATA.hospital_types.map(d => d.type.length > 25 ? d.type.substring(0,22)+'...' : d.type),
-    datasets: [{{ label: 'Count', data: DB_DATA.hospital_types.map(d => d.count), backgroundColor: typeColors, borderRadius: 4 }}]
-  }},
-  options: {{ indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ display: false }} }}, scales: {{ x: {{ grid: {{ color: '#1e293b' }}, beginAtZero: true }}, y: {{ grid: {{ display: false }}, ticks: {{ font: {{ size: 10 }} }} }} }} }}
-}});
+    datasets: [{ label: 'Count', data: DB_DATA.hospital_types.map(d => d.count), backgroundColor: typeColors, borderRadius: 4 }]
+  },
+  options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#1e293b' }, beginAtZero: true }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+});
 
-const natColors = {{ 'Better':'#22c55e','Same':'#3b82f6','Worse':'#ef4444','Not Available':'#64748b' }};
-new Chart(document.getElementById('chartNational'), {{
+const natColors = { 'Better':'#22c55e','Same':'#3b82f6','Worse':'#ef4444','Not Available':'#64748b' };
+new Chart(document.getElementById('chartNational'), {
   type: 'doughnut',
-  data: {{ labels: DB_DATA.national_comparison.map(d => d.result), datasets: [{{ data: DB_DATA.national_comparison.map(d => d.count), backgroundColor: DB_DATA.national_comparison.map(d => natColors[d.result]||'#64748b'), borderWidth: 2, borderColor: '#1e293b' }}] }},
-  options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ font: {{ size: 11 }}, padding: 10 }} }} }} }}
-}});
+  data: { labels: DB_DATA.national_comparison.map(d => d.result), datasets: [{ data: DB_DATA.national_comparison.map(d => d.count), backgroundColor: DB_DATA.national_comparison.map(d => natColors[d.result]||'#64748b'), borderWidth: 2, borderColor: '#1e293b' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } } } }
+});
 
 // ── Nav active state (IntersectionObserver) ─────────────────────────────────
-(function() {{
+(function() {
   const sections = ['about','how-it-works','dashboard','hospitals','metrics','etl','export'];
   const links = document.querySelectorAll('nav a[href^="#"]');
-  const observer = new IntersectionObserver(function(entries) {{
-    entries.forEach(function(e) {{
-      if (e.isIntersecting) {{
-        links.forEach(function(a) {{ a.classList.remove('active'); }});
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        links.forEach(function(a) { a.classList.remove('active'); });
         var match = document.querySelector('nav a[href="#' + e.target.id + '"]');
         if (match) match.classList.add('active');
-      }}
-    }});
-  }}, {{ rootMargin: '-20% 0px -60% 0px' }});
-  sections.forEach(function(id) {{
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  sections.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) observer.observe(el);
-  }});
-  links.forEach(function(a) {{
-    a.addEventListener('click', function() {{
-      links.forEach(function(l) {{ l.classList.remove('active'); }});
+  });
+  links.forEach(function(a) {
+    a.addEventListener('click', function() {
+      links.forEach(function(l) { l.classList.remove('active'); });
       a.classList.add('active');
-    }});
-  }});
-}})();
+    });
+  });
+})();
 
 // ── Step 2: Try live API in background ───────────────────────────────────────
-(async () => {{
-  if (API_DISABLED) {{
+(async () => {
+  if (API_DISABLED) {
     setBadge(false);
     return;
-  }}
-  try {{
+  }
+  try {
     const [statesRes, hospitalsRes] = await Promise.all([
-      fetch(API + '/states/summary', {{ signal: AbortSignal.timeout(15000) }}),
-      fetch(API + '/hospitals?limit=1', {{ signal: AbortSignal.timeout(15000) }}),
+      fetch(API + '/states/summary', { signal: AbortSignal.timeout(15000) }),
+      fetch(API + '/hospitals?limit=1', { signal: AbortSignal.timeout(15000) }),
     ]);
     if (!statesRes.ok || !hospitalsRes.ok) throw new Error('API error');
 
@@ -928,7 +1109,7 @@ new Chart(document.getElementById('chartNational'), {{
       : DB_DATA.kpi.avg_rating;
 
     renderKPIs(
-      {{ total_hospitals: totalHospitals, avg_rating: avgRating, with_emergency: withEmergency }},
+      { total_hospitals: totalHospitals, avg_rating: avgRating, with_emergency: withEmergency },
       DB_DATA.metrics_count
     );
 
@@ -937,19 +1118,10 @@ new Chart(document.getElementById('chartNational'), {{
     document.getElementById('gen-time').textContent = 'Live: ' + now;
     setBadge(true);
 
-  }} catch (_) {{
+  } catch (_) {
     setBadge(false);
-  }}
-}})();
+  }
+})();
 </script>
 </body>
-</html>"""
-
-out_path = os.path.join(os.path.dirname(__file__), 'site', 'index.html')
-with open(out_path, 'w') as f:
-    f.write(html)
-
-print(f"Built: site/index.html ({len(html):,} bytes)")
-print(f"  Hospitals: {data['kpi']['total_hospitals']:,}")
-print(f"  Metrics:   {data['metrics_count']:,}")
-print(f"  States:    {len(data['top_states'])}")
+</html>

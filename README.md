@@ -302,6 +302,8 @@ Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API t
 
 To re-enable live dashboard/API behavior, start the Function App, set `API_DISABLED = false` in `build_dashboard.py`, rebuild, then redeploy Azure Static Web Apps.
 
+To refresh only the embedded snapshot, use the **Manual refresh** button in the dashboard header and run the GitHub Actions workflow. This is intentionally a privileged, manual action because it queries Azure SQL and resumes serverless compute.
+
 ---
 
 ## Live URLs
