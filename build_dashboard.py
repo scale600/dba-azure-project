@@ -811,7 +811,7 @@ function renderETL(rows) {{
 
 // ── Step 1: Render snapshot immediately ──────────────────────────────────────
 renderKPIs(DB_DATA.kpi, DB_DATA.metrics_count);
-document.getElementById('gen-time').textContent = 'Snapshot: ' + DB_DATA.generated_at;
+document.getElementById('gen-time').textContent = DB_DATA.generated_at.replace(' PST','');
 renderETL(DB_DATA.etl_log);
 
 Chart.defaults.color = '#94a3b8';
