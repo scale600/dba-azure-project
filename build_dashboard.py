@@ -222,6 +222,27 @@ tr:last-child td{{border-bottom:none}}
 /* Mobile section nav (hidden on desktop) */
 .mobile-nav{{display:none}}
 
+/* Hamburger button */
+.hamburger{{display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;flex-shrink:0;margin-right:4px}}
+.hamburger:hover{{color:var(--text)}}
+.hamburger svg{{width:22px;height:22px}}
+
+/* Drawer */
+.drawer-overlay{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20}}
+.drawer-overlay.open{{display:block}}
+.drawer{{position:fixed;top:0;left:0;bottom:0;width:260px;background:var(--sidebar);z-index:21;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}}
+.drawer.open{{transform:translateX(0)}}
+.drawer .drawer-logo{{padding:20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}}
+.drawer .drawer-logo svg{{color:var(--accent)}}
+.drawer .drawer-logo span{{font-weight:700;font-size:13px;line-height:1.3;color:var(--text)}}
+.drawer nav{{flex:1;padding:8px 0}}
+.drawer nav a{{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--muted);text-decoration:none;border-right:2px solid transparent;transition:all .15s}}
+.drawer nav a.active{{color:var(--accent);border-right-color:var(--accent);background:rgba(59,130,246,.15)}}
+.drawer nav a:hover{{color:var(--text);background:rgba(255,255,255,.05)}}
+.drawer nav a svg{{width:18px;height:18px;flex-shrink:0}}
+.drawer .drawer-footer{{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);flex-shrink:0}}
+.drawer .nav-sep{{height:1px;background:var(--border);margin:6px 0}}
+
 @media(max-width:680px){{
   aside{{display:none}}
   .topbar{{height:auto;min-height:56px;padding:8px 16px;flex-wrap:wrap;gap:6px}}
@@ -231,7 +252,8 @@ tr:last-child td{{border-bottom:none}}
   .theme-toggle .theme-label{{display:none}}
   .topbar .badge,.topbar .generated{{font-size:10px;order:1}}
   .content{{padding:20px 12px}}
-  .mobile-nav{{display:flex;overflow-x:auto;gap:0;border-bottom:1px solid var(--border);background:var(--sidebar);padding:0 4px;-webkit-overflow-scrolling:touch;flex-shrink:0}}
+  .hamburger{{display:block}}
+  .mobile-nav{{display:none}}
   .mobile-nav a{{flex-shrink:0;padding:8px 10px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}}
   .mobile-nav a.active{{border-bottom-color:var(--accent);color:var(--accent)}}
   .mobile-nav a:hover{{color:var(--text)}}
@@ -301,8 +323,58 @@ tr:last-child td{{border-bottom:none}}
   </div>
 </aside>
 
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    <span>DBA Azure<br/>Project</span>
+  </div>
+  <nav>
+    <a href="#dashboard" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="#hospitals">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      Hospitals
+    </a>
+    <a href="#metrics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      Quality Metrics
+    </a>
+    <a href="#etl">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      ETL Operations
+    </a>
+    <a href="#export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Data Export
+    </a>
+    <div class="nav-sep"></div>
+    <a href="#about">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      About
+    </a>
+    <a href="#how-it-works">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      How It Works
+    </a>
+    <a href="docs.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Project Docs
+    </a>
+  </nav>
+  <div class="drawer-footer">
+    Azure SQL · westus3<br/>
+    App Insights · eastus
+  </div>
+</div>
+
 <main>
   <div class="topbar">
+    <button class="hamburger" id="hamburger-btn" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <h1>Hospital Quality Dashboard</h1>
     <div class="topbar-links">
       <a href="https://project.techcloudup.com" target="_blank" rel="noopener noreferrer" title="Project">
@@ -596,6 +668,20 @@ tr:last-child td{{border-bottom:none}}
     html.setAttribute('data-theme', isLight ? '' : 'light');
     label.textContent = isLight ? 'Light' : 'Dark';
     localStorage.setItem('theme', isLight ? 'dark' : 'light');
+  }});
+}})();
+
+// Drawer toggle
+(function() {{
+  var btn = document.getElementById('hamburger-btn');
+  var drawer = document.getElementById('drawer');
+  var overlay = document.getElementById('drawer-overlay');
+  function open() {{ drawer.classList.add('open'); overlay.classList.add('open'); }}
+  function close() {{ drawer.classList.remove('open'); overlay.classList.remove('open'); }}
+  btn.addEventListener('click', function(e) {{ e.stopPropagation(); open(); }});
+  overlay.addEventListener('click', close);
+  drawer.querySelectorAll('nav a').forEach(function(a) {{
+    a.addEventListener('click', function() {{ setTimeout(close, 150); }});
   }});
 }})();
 
