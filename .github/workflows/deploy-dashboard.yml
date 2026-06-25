@@ -5,11 +5,9 @@ on:
     branches:
       - main
     paths:
-      - build_dashboard.py
+      - scripts/build_dashboard.py
       - site/**
       - .github/workflows/deploy-dashboard.yml
-  # Snapshot regeneration queries Azure SQL. Keep this manual while cost-control
-  # mode is active so the serverless database can remain paused.
   workflow_dispatch:
     inputs:
       refresh_snapshot:
@@ -17,6 +15,14 @@ on:
         required: true
         default: true
         type: boolean
+
+concurrency:
+  group: deploy-dashboard
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build-and-deploy:
@@ -43,7 +49,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.refresh_snapshot
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
-        run: python build_dashboard.py
+        run: python scripts/build_dashboard.py
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1

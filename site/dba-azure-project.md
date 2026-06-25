@@ -624,7 +624,7 @@ az sql db show \
 
 Avoid opening Azure Portal Query Editor, SSMS, Power BI DirectQuery, local API tests, or dashboard build scripts while minimizing cost. Any login attempt can resume a paused serverless SQL database.
 
-To re-enable live dashboard/API behavior, start the Function App, set `API_DISABLED = false` in `build_dashboard.py`, rebuild, then redeploy Azure Static Web Apps.
+To re-enable live dashboard/API behavior, start the Function App, set `API_DISABLED = false` in `scripts/build_dashboard.py`, rebuild, then redeploy Azure Static Web Apps.
 
 For a snapshot-only update, use the **Manual refresh** button in the dashboard header and run the GitHub Actions workflow. It is intentionally manual because rebuilding the snapshot queries Azure SQL and resumes serverless compute.
 

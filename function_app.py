@@ -7,8 +7,11 @@ Triggers:
 
 import json
 import logging
+import re
 import sys
 import os
+import time
+from collections import defaultdict
 
 import azure.functions as func
 
@@ -17,6 +20,111 @@ from api.db import query
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Security: Input validation
+# ---------------------------------------------------------------------------
+
+# CMS Facility IDs are 6-10 alphanumeric characters
+_FACILITY_ID_RE = re.compile(r"^[A-Z0-9]{6,10}$")
+_MEASURE_ID_RE   = re.compile(r"^[A-Za-z0-9_]{1,50}$")
+
+# Valid US state/territory abbreviations (CMS dataset)
+_VALID_STATES = frozenset({
+    "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DC", "DE", "FL",
+    "GA", "GU", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA",
+    "MA", "MD", "ME", "MI", "MN", "MO", "MP", "MS", "MT", "NC",
+    "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR",
+    "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VI",
+    "VT", "WA", "WI", "WV", "WY",
+})
+
+
+# ---------------------------------------------------------------------------
+# Security: Rate limiting (in-memory, best-effort for single-instance Functions)
+# ---------------------------------------------------------------------------
+
+_RATE_LIMIT_WINDOW = 60      # seconds
+_RATE_LIMIT_MAX     = 60     # requests per window per IP
+_rate_buckets: defaultdict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(req: func.HttpRequest) -> bool:
+    """Return True if the request is within rate limits."""
+    ip = req.headers.get("X-Forwarded-For", "").split(",")[0].strip() or "unknown"
+    now = time.monotonic()
+    bucket = _rate_buckets[ip]
+
+    # Purge expired entries
+    cutoff = now - _RATE_LIMIT_WINDOW
+    while bucket and bucket[0] < cutoff:
+        bucket.pop(0)
+
+    if len(bucket) >= _RATE_LIMIT_MAX:
+        return False
+
+    bucket.append(now)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Security: Response helpers with security headers
+# ---------------------------------------------------------------------------
+
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-RateLimit-Limit": str(_RATE_LIMIT_MAX),
+    "X-RateLimit-Remaining": "0",  # overridden in _ok / _err after check
+    "Cache-Control": "no-store",
+}
+
+def _security_response(body: str, status: int) -> func.HttpResponse:
+    return func.HttpResponse(
+        body,
+        status_code=status,
+        mimetype="application/json",
+        headers=dict(_SECURITY_HEADERS),
+    )
+
+def _internal_error(exc: Exception) -> func.HttpResponse:
+    """Log the real error; return a sanitized response to the client."""
+    log.exception("Internal error")
+    return func.HttpResponse(
+        json.dumps({"error": "INTERNAL_ERROR", "message": "An unexpected error occurred.", "status": 500}),
+        status_code=500,
+        mimetype="application/json",
+        headers=dict(_SECURITY_HEADERS),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Security: Input validators
+# ---------------------------------------------------------------------------
+
+def _validate_facility_id(fid: str) -> str | None:
+    """Return sanitized facility_id or None if invalid."""
+    fid = fid.strip()
+    if not _FACILITY_ID_RE.match(fid):
+        return None
+    return fid
+
+
+def _validate_measure_id(mid: str) -> str | None:
+    """Return sanitized measure_id or None if invalid."""
+    mid = mid.strip()
+    if not _MEASURE_ID_RE.match(mid):
+        return None
+    return mid
+
+
+def _validate_state(s: str) -> str | None:
+    """Return sanitized 2-letter state code or None if invalid."""
+    s = s.strip().upper()
+    if s not in _VALID_STATES:
+        return None
+    return s
 
 
 # ---------------------------------------------------------------------------
@@ -35,18 +143,13 @@ def etl_timer(timer: func.TimerRequest) -> None:
 # ---------------------------------------------------------------------------
 
 def _ok(data, status: int = 200) -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps(data, default=str),
-        status_code=status,
-        mimetype="application/json",
-    )
+    return _security_response(json.dumps(data, default=str), status)
 
 
 def _err(code: str, message: str, status: int) -> func.HttpResponse:
-    return func.HttpResponse(
+    return _security_response(
         json.dumps({"error": code, "message": message, "status": status}),
-        status_code=status,
-        mimetype="application/json",
+        status,
     )
 
 
@@ -63,7 +166,10 @@ def _int(val, default: int, min_v: int = 1, max_v: int = 10_000) -> int:
 
 @app.route(route="hospitals", methods=["GET"])
 def get_hospitals(req: func.HttpRequest) -> func.HttpResponse:
-    state     = req.params.get("state", "").upper().strip() or None
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
+
+    state     = _validate_state(req.params.get("state", "")) if req.params.get("state") else None
     emergency = req.params.get("emergency", "").upper().strip() or None
     rating    = req.params.get("rating")
     limit     = _int(req.params.get("limit"), 20, 1, 500)
@@ -104,7 +210,7 @@ def get_hospitals(req: func.HttpRequest) -> func.HttpResponse:
         rows  = query(data_sql, tuple(params) + (offset, limit))
     except Exception as exc:
         log.exception("get_hospitals failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     return _ok({"total": total, "limit": limit, "offset": offset, "data": rows})
 
@@ -115,9 +221,12 @@ def get_hospitals(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="hospitals/{facility_id}", methods=["GET"])
 def get_hospital_detail(req: func.HttpRequest) -> func.HttpResponse:
-    fid = req.route_params.get("facility_id", "").strip()
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
+
+    fid = _validate_facility_id(req.route_params.get("facility_id", ""))
     if not fid:
-        return _err("INVALID_PARAM", "facility_id is required", 400)
+        return _err("INVALID_PARAM", "facility_id must be 6-10 alphanumeric characters", 400)
 
     sql = """
         SELECT FacilityID, FacilityName, Address, City,
@@ -131,7 +240,7 @@ def get_hospital_detail(req: func.HttpRequest) -> func.HttpResponse:
         rows = query(sql, (fid,))
     except Exception as exc:
         log.exception("get_hospital_detail failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     if not rows:
         return _err("NOT_FOUND", f"Hospital '{fid}' not found.", 404)
@@ -145,19 +254,26 @@ def get_hospital_detail(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="hospitals/{facility_id}/metrics", methods=["GET"])
 def get_hospital_metrics(req: func.HttpRequest) -> func.HttpResponse:
-    fid        = req.route_params.get("facility_id", "").strip()
-    measure_id = req.params.get("measure_id", "").strip() or None
-    limit      = _int(req.params.get("limit"), 10, 1, 200)
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
 
+    fid = _validate_facility_id(req.route_params.get("facility_id", ""))
     if not fid:
-        return _err("INVALID_PARAM", "facility_id is required", 400)
+        return _err("INVALID_PARAM", "facility_id must be 6-10 alphanumeric characters", 400)
+
+    raw_mid = req.params.get("measure_id", "").strip()
+    measure_id = _validate_measure_id(raw_mid) if raw_mid else None
+    if raw_mid and not measure_id:
+        return _err("INVALID_PARAM", "measure_id must be 1-50 alphanumeric/underscore characters", 400)
+
+    limit = _int(req.params.get("limit"), 10, 1, 200)
 
     # Verify hospital exists
     try:
         exists = query("SELECT 1 FROM dbo.Hospital WHERE FacilityID = ?", (fid,))
     except Exception as exc:
         log.exception("metrics: hospital lookup failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     if not exists:
         return _err("NOT_FOUND", f"Hospital '{fid}' not found.", 404)
@@ -182,7 +298,7 @@ def get_hospital_metrics(req: func.HttpRequest) -> func.HttpResponse:
         rows = query(sql, (limit,) + tuple(params))
     except Exception as exc:
         log.exception("get_hospital_metrics failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     return _ok({"facility_id": fid, "count": len(rows), "metrics": rows})
 
@@ -193,6 +309,8 @@ def get_hospital_metrics(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="states/summary", methods=["GET"])
 def get_states_summary(req: func.HttpRequest) -> func.HttpResponse:
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
     sql = """
         SELECT
             RTRIM(State)                                    AS state,
@@ -212,7 +330,7 @@ def get_states_summary(req: func.HttpRequest) -> func.HttpResponse:
         rows = query(sql)
     except Exception as exc:
         log.exception("get_states_summary failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     return _ok({"count": len(rows), "data": rows})
 
@@ -223,12 +341,20 @@ def get_states_summary(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="metrics/top", methods=["GET"])
 def get_metrics_top(req: func.HttpRequest) -> func.HttpResponse:
-    measure_id = req.params.get("measure_id", "").strip()
-    state      = req.params.get("state", "").upper().strip() or None
-    limit      = _int(req.params.get("limit"), 10, 1, 100)
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
 
+    raw_mid = req.params.get("measure_id", "").strip()
+    measure_id = _validate_measure_id(raw_mid)
     if not measure_id:
-        return _err("INVALID_PARAM", "'measure_id' query parameter is required", 400)
+        return _err("INVALID_PARAM", "measure_id must be 1-50 alphanumeric/underscore characters", 400)
+
+    raw_state = req.params.get("state", "").strip()
+    state = _validate_state(raw_state) if raw_state else None
+    if raw_state and not state:
+        return _err("INVALID_PARAM", f"Invalid state code: '{raw_state[:2]}'", 400)
+
+    limit = _int(req.params.get("limit"), 10, 1, 100)
 
     where = "WHERE m.MeasureID = ? AND m.Score IS NOT NULL"
     params: list = [measure_id]
@@ -251,7 +377,7 @@ def get_metrics_top(req: func.HttpRequest) -> func.HttpResponse:
         rows = query(sql, (limit,) + tuple(params))
     except Exception as exc:
         log.exception("get_metrics_top failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     return _ok({
         "measure_id": measure_id,
@@ -267,7 +393,14 @@ def get_metrics_top(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="metrics/export", methods=["GET"])
 def get_metrics_export(req: func.HttpRequest) -> func.HttpResponse:
-    state  = req.params.get("state", "").upper().strip() or None
+    if not _check_rate_limit(req):
+        return _err("RATE_LIMITED", "Too many requests. Try again later.", 429)
+
+    raw_state = req.params.get("state", "").strip()
+    state = _validate_state(raw_state) if raw_state else None
+    if raw_state and not state:
+        return _err("INVALID_PARAM", f"Invalid state code: '{raw_state[:2]}'", 400)
+
     limit  = _int(req.params.get("limit"), 1000, 1, 2000)
     offset = _int(req.params.get("offset"), 0, 0, 10_000_000)
 
@@ -303,6 +436,6 @@ def get_metrics_export(req: func.HttpRequest) -> func.HttpResponse:
         rows  = query(data_sql, tuple(params) + (offset, limit))
     except Exception as exc:
         log.exception("get_metrics_export failed")
-        return _err("INTERNAL_ERROR", str(exc), 500)
+        return _internal_error(exc)
 
     return _ok({"total": total, "limit": limit, "offset": offset, "data": rows})

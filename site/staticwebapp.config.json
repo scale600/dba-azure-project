@@ -3,7 +3,16 @@
     {
       "route": "/*",
       "headers": {
-        "X-Frame-Options": "SAMEORIGIN"
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "0",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      }
+    },
+    {
+      "route": "/dashboard_data.json",
+      "headers": {
+        "Cache-Control": "public, max-age=3600"
       }
     }
   ],
@@ -13,6 +22,8 @@
     }
   },
   "globalHeaders": {
-    "Cache-Control": "no-cache"
+    "Cache-Control": "no-cache",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
   }
 }

@@ -7,10 +7,11 @@ from datetime import date, datetime, timezone, timedelta
 
 PST = timezone(timedelta(hours=-8))
 
-sys.path.insert(0, os.path.dirname(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
 
 # Load .env
-env_path = os.path.join(os.path.dirname(__file__), '.env')
+env_path = os.path.join(ROOT, '.env')
 if os.path.exists(env_path):
     with open(env_path) as f:
         for line in f:
@@ -945,7 +946,7 @@ new Chart(document.getElementById('chartNational'), {{
 </body>
 </html>"""
 
-out_path = os.path.join(os.path.dirname(__file__), 'site', 'index.html')
+out_path = os.path.join(ROOT, 'site', 'index.html')
 with open(out_path, 'w') as f:
     f.write(html)
 
