@@ -260,8 +260,8 @@ tr:last-child td{{border-bottom:none}}
   aside{{display:none}}
   body{{display:block;height:auto;overflow:auto}}
   main{{overflow:visible}}
-  .topbar{{position:sticky;top:0;z-index:10;height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px;justify-content:center}}
-  .topbar h1{{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;text-align:center}}
+  .topbar{{position:sticky;top:0;z-index:10;height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px;justify-content:flex-start}}
+  .topbar h1{{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;flex:1;text-align:left}}
   .topbar-links{{gap:8px;order:2}}
   .manual-refresh{{min-width:44px;min-height:44px;padding:8px;border:none;display:flex;align-items:center;justify-content:center}}
   .manual-refresh .refresh-label{{display:none}}
@@ -271,7 +271,7 @@ tr:last-child td{{border-bottom:none}}
   .theme-toggle svg{{width:16px;height:16px}}
   .topbar .badge,.topbar .generated{{display:none}}
   .content{{padding:20px 12px}}
-  .hamburger{{display:block;min-width:44px;min-height:44px;padding:10px;position:absolute;left:16px}}
+  .hamburger{{display:block;min-width:44px;min-height:44px;padding:10px}}
   .topbar-links a{{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}}
   .mobile-nav{{display:none}}
   .mobile-nav a{{flex-shrink:0;padding:8px 10px;font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}}
