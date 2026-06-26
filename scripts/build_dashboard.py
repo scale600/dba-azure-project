@@ -260,7 +260,7 @@ tr:last-child td{{border-bottom:none}}
   aside{{display:none}}
   body{{display:block;height:auto;overflow:auto}}
   main{{overflow:visible}}
-  .topbar{{height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px}}
+  .topbar{{position:sticky;top:0;z-index:10;height:auto;min-height:46px;padding:4px 16px 8px;flex-wrap:wrap;gap:6px}}
   .topbar h1{{font-size:23px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:0;width:100%;max-width:none;text-align:center}}
   .topbar-links{{gap:8px;order:2}}
   .manual-refresh{{min-width:44px;min-height:44px;padding:8px;border:none;display:flex;align-items:center;justify-content:center}}
