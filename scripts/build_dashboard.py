@@ -269,7 +269,7 @@ tr:last-child td{{border-bottom:none}}
   .theme-toggle:hover{{color:#e2e8f0;background:none}}
   .theme-toggle .theme-label{{display:none}}
   .theme-toggle svg{{width:16px;height:16px}}
-  .topbar .badge,.topbar .generated{{font-size:10px;order:1}}
+  .topbar .badge,.topbar .generated{{display:none}}
   .content{{padding:20px 12px}}
   .hamburger{{display:block;min-width:44px;min-height:44px;padding:10px}}
   .topbar-links a{{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}}
