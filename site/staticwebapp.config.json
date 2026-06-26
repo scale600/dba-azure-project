@@ -1,18 +1,18 @@
 {
   "routes": [
     {
+      "route": "/dashboard_data.json",
+      "headers": {
+        "Cache-Control": "public, max-age=3600"
+      }
+    },
+    {
       "route": "/*",
       "headers": {
         "X-Frame-Options": "SAMEORIGIN",
         "X-Content-Type-Options": "nosniff",
         "X-XSS-Protection": "0",
         "Referrer-Policy": "strict-origin-when-cross-origin"
-      }
-    },
-    {
-      "route": "/dashboard_data.json",
-      "headers": {
-        "Cache-Control": "public, max-age=3600"
       }
     }
   ],
